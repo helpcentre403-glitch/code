@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  phone     String?  @unique
+  name      String?
+  tags      String   @default("")
+  createdAt DateTime @default(now())
+
+  emailLogs EmailLog[]
+  smsLogs   SmsLog[]
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  name        String
+  description String         @default("")
+  status      String         @default("draft")
+  steps       CampaignStep[]
+  runs        CampaignRun[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model CampaignStep {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  type       String
+  stepOrder  Int
+  config     String   @default("{}")
+  createdAt  DateTime @default(now())
+}
+
+model CampaignRun {
+  id          String    @id @default(cuid())
+  campaignId  String
+  campaign    Campaign  @relation(fields: [campaignId], references: [id])
+  status      String    @default("running")
+  totalSent   Int       @default(0)
+  totalFailed Int       @default(0)
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  emailLogs EmailLog[]
+  smsLogs   SmsLog[]
+}
+
+model EmailLog {
+  id            String       @id @default(cuid())
+  contactId     String
+  contact       Contact      @relation(fields: [contactId], references: [id])
+  campaignRunId String?
+  campaignRun   CampaignRun? @relation(fields: [campaignRunId], references: [id])
+  status        String
+  toEmail       String
+  subject       String
+  sentAt        DateTime     @default(now())
+  error         String?
+}
+
+model SmsLog {
+  id            String       @id @default(cuid())
+  contactId     String
+  contact       Contact      @relation(fields: [contactId], references: [id])
+  campaignRunId String?
+  campaignRun   CampaignRun? @relation(fields: [campaignRunId], references: [id])
+  status        String
+  toPhone       String
+  message       String
+  sentAt        DateTime     @default(now())
+  error         String?
+}
+
+model QueueJob {
+  id          String    @id @default(cuid())
+  type        String
+  payload     String
+  status      String    @default("pending")
+  executeAt   DateTime  @default(now())
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+}
+
+model AppSettings {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
