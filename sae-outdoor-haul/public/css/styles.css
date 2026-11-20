@@ -327,3 +327,10 @@ button, input, select, textarea { color: var(--ink); }
 /* Text-message consent */
 .consent { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--ink-2); line-height: 1.4; cursor: pointer; }
 .consent input { width: 22px; height: 22px; flex: none; margin-top: 2px; accent-color: var(--accent); }
+
+/* Booked times: visible but scratched out and not clickable */
+.slot.taken { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; background: var(--paper); border-style: dashed; color: var(--ink-2); cursor: not-allowed; line-height: 1.1; }
+.slot.taken s { text-decoration-thickness: 2px; }
+.slot.taken small { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.date-chip.full { opacity: .55; border-style: dashed; }
+.date-chip.full .count { font-weight: 900; }

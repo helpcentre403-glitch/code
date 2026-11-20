@@ -154,10 +154,10 @@
     var slots = el('div', { class: 'slot-grid', role: 'radiogroup', 'aria-label': 'Time' });
     var chosen = el('p', { class: 'chosen-slot', 'aria-live': 'polite' });
     availability.forEach(function (d) {
-      var b = el('button', { type: 'button', class: 'date-chip', 'data-date': d.date, role: 'radio', 'aria-checked': 'false' }, [
+      var b = el('button', { type: 'button', class: 'date-chip' + (d.full ? ' full' : ''), 'data-date': d.date, role: 'radio', 'aria-checked': 'false', 'aria-disabled': d.full ? 'true' : 'false' }, [
         el('span', { class: 'dow', text: d.isToday ? 'Today' : d.label.split(',')[0] }),
         el('span', { class: 'dm', text: d.label.split(', ')[1] || d.label }),
-        el('span', { class: 'count', text: d.slots.length + (d.slots.length === 1 ? ' time' : ' times') }),
+        el('span', { class: 'count', text: d.full ? 'Full' : d.slots.length + (d.slots.length === 1 ? ' time' : ' times') }),
       ]);
       b.addEventListener('click', function () { pickDate(d); });
       dates.appendChild(b);
@@ -166,9 +166,19 @@
       if (dateInput.value !== d.date) { timeInput.value = ''; chosen.textContent = ''; }
       dateInput.value = d.date;
       dates.querySelectorAll('.date-chip').forEach(function (c) { c.setAttribute('aria-checked', String(c.getAttribute('data-date') === d.date)); });
-      dayTitle.textContent = 'Open times on ' + d.label + ':';
+      dayTitle.textContent = d.full ? d.label + ' is fully booked. Please pick another day.' : 'Open times on ' + d.label + ':';
       slots.innerHTML = '';
-      d.slots.forEach(function (s) {
+      // Open and booked times together, in time order; booked ones are scratched out and can't be picked.
+      var all = d.slots.map(function (s) { return { time: s.time, label: s.label, booked: false }; })
+        .concat((d.booked || []).map(function (s) { return { time: s.time, label: s.label, booked: true }; }))
+        .sort(function (x, y) { return x.time < y.time ? -1 : 1; });
+      all.forEach(function (s) {
+        if (s.booked) {
+          slots.appendChild(el('button', { type: 'button', class: 'slot taken', disabled: true, 'data-time': s.time, 'aria-label': s.label + ', booked' }, [
+            el('s', { text: s.label }), el('small', { text: 'Booked' }),
+          ]));
+          return;
+        }
         var sb = el('button', { type: 'button', class: 'slot', role: 'radio', 'aria-checked': 'false', 'data-time': s.time, text: s.label });
         sb.addEventListener('click', function () {
           dateInput.value = d.date; timeInput.value = s.time;
@@ -184,7 +194,7 @@
     host.appendChild(dayTitle);
     host.appendChild(slots);
     host.appendChild(chosen);
-    pickDate(availability[0]);
+    pickDate(availability.filter(function (d) { return !d.full; })[0] || availability[0]);
   }
 
   // ---------- Junk ----------

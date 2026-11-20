@@ -93,19 +93,22 @@ function windowDates(schedule, now) {
 }
 
 /** Public availability: only dates with at least one open slot, only open slots. */
+/**
+ * Public availability: open slots, plus booked slots (shown scratched out, one booking per time
+ * across all services). Days with nothing open or booked are left out; fully booked days are kept
+ * so customers see them as "Full". Booked entries never include who booked.
+ */
 function availability(schedule, bookedKeys, now = new Date()) {
   const today = nowInZone(schedule.timezone, now).date;
   return windowDates(schedule, now)
-    .map((date) => ({
-      date,
-      label: formatDate(date),
-      dayName: DAY_NAMES[weekday(date)],
-      isToday: date === today,
-      slots: daySlotStatus(schedule, date, bookedKeys, now)
-        .filter((s) => s.status === 'open')
-        .map(({ time, label }) => ({ time, label })),
-    }))
-    .filter((d) => d.slots.length > 0);
+    .map((date) => {
+      const all = daySlotStatus(schedule, date, bookedKeys, now);
+      const pick = (st) => all.filter((s) => s.status === st).map(({ time, label }) => ({ time, label }));
+      const slots = pick('open');
+      const booked = pick('booked');
+      return { date, label: formatDate(date), dayName: DAY_NAMES[weekday(date)], isToday: date === today, slots, booked, full: slots.length === 0 };
+    })
+    .filter((d) => d.slots.length > 0 || d.booked.length > 0);
 }
 
 function isSlotAvailable(schedule, bookedKeys, date, time, now = new Date()) {

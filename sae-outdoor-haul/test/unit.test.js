@@ -335,3 +335,19 @@ test('Twilio sender: Messaging Service or From number, phone formats, readable e
   const bad = createSms({ accountSid: 'AC1', authToken: 't', from: '+14695550199', fetchImpl: async () => ({ ok: false, status: 400, json: async () => ({ code: 21606, message: 'The From phone number is not a valid, SMS-capable inbound phone number' }) }) });
   await assert.rejects(bad.send('2145550100', 'x'), /Twilio HTTP 400 \(Twilio error 21606/);
 });
+
+test('public calendar shows booked times (no customer info) and keeps fully booked days as Full', () => {
+  const { defaultSettings: ds } = require('../lib/defaults');
+  const sch = ds().schedule;
+  const booked = new Set(['2026-12-08 18:00', '2026-12-09 17:00', '2026-12-09 18:00', '2026-12-09 19:00', '2026-12-09 20:00']);
+  const days = cal.availability(sch, booked, FIXED_NOW);
+  const tue = days.find((d) => d.date === '2026-12-08');
+  assert.deepEqual(tue.slots.map((x) => x.time), ['17:00', '19:00', '20:00']);
+  assert.deepEqual(tue.booked, [{ time: '18:00', label: '6:00 PM' }]);
+  assert.equal(tue.full, false);
+  const wed = days.find((d) => d.date === '2026-12-09');
+  assert.equal(wed.full, true);
+  assert.deepEqual(wed.slots, []);
+  assert.equal(wed.booked.length, 4);
+  assert.equal(cal.isSlotAvailable(sch, booked, '2026-12-08', '18:00', FIXED_NOW), false);
+});

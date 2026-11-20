@@ -33,7 +33,7 @@ async function fillContact(section, name = 'Pat Test') {
 }
 async function slotsOn(section, dateLabel) {
   await section.locator('.date-chip', { hasText: dateLabel }).click();
-  return section.locator('.slot').allInnerTexts();
+  return section.locator('.slot:not(.taken)').allInnerTexts();
 }
 async function pickSlot(section, dateLabel, timeLabel) {
   await section.locator('.date-chip', { hasText: dateLabel }).click();
@@ -109,9 +109,18 @@ test('junk removal: full flow -> estimate breakdown -> Book This Date -> thank y
   // The booked slot is gone for the next customer
   await page.goto(`${srv.base}/prices`);
   await page.waitForSelector('body[data-ready="true"]');
-  const times = await slotsOn(page.locator('#junk'), 'Dec 12');
-  assert.ok(!times.includes('10:00 AM'));
-  assert.ok(times.includes('11:00 AM'));
+  const junkSec = page.locator('#junk');
+  await junkSec.locator('.date-chip', { hasText: 'Dec 12' }).click();
+  // Booked time stays visible, scratched out, and can't be picked, for every service
+  const taken = junkSec.locator('.slot.taken', { hasText: '10:00 AM' });
+  assert.equal(await taken.count(), 1);
+  assert.equal(await taken.isDisabled(), true);
+  assert.match(await taken.innerText(), /booked/i);
+  assert.equal(await taken.locator('s').count(), 1);
+  const treesSec = page.locator('#trees');
+  await treesSec.locator('.date-chip', { hasText: 'Dec 12' }).click();
+  assert.equal(await treesSec.locator('.slot.taken', { hasText: '10:00 AM' }).isDisabled(), true);
+  assert.ok((await junkSec.locator('.slot:not(.taken)').allInnerTexts()).includes('11:00 AM'));
   assert.deepEqual(errors, []);
   await ctx.close();
 });
