@@ -104,8 +104,8 @@ function decorate(estimate) {
     totalDisplay: pricing.formatPrice(estimate.total),
     sections: estimate.sections.map((s) => ({
       ...s,
-      subtotalDisplay: pricing.formatPrice(s.subtotal),
-      lines: s.lines.map((l) => ({ ...l, display: l.status === 'ok' ? pricing.formatPrice(l.price) : statusText[l.status] })),
+      subtotalDisplay: s.lines.length && s.lines.every((l) => l.free) ? 'No fee' : pricing.formatPrice(s.subtotal),
+      lines: s.lines.map((l) => ({ ...l, display: l.free ? 'No fee' : l.status === 'ok' ? pricing.formatPrice(l.price) : statusText[l.status] })),
     })),
   };
 }

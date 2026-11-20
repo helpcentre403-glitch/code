@@ -24,7 +24,7 @@ test('distance bands (owner rates): $10 for 0-9 mi, $20 for 10-20 mi, nothing pa
   assert.equal(pricing.distanceLine(r, dist(25)).outOfArea, true);
   const free = pricing.distanceLine(r, dist(3, 'Carrollton', true)).line;
   assert.deepEqual(range(free.price), [0, 0]);
-  assert.match(free.label, /Carrollton address: no travel fee/);
+  assert.match(free.label, /Carrollton address: no distance fee/);
 });
 
 test('distance fee not set yet (TODO) shows "to be confirmed", never a made-up number', () => {

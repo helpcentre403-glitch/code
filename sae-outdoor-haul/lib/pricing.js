@@ -116,7 +116,7 @@ function validate(service, body, settings) {
 function distanceLine(rates, distance) {
   const d = rates.distance;
   if (distance.free) {
-    return { outOfArea: false, line: { label: `${distance.city || 'Carrollton'} address: no travel fee`, price: fixed(0), status: 'ok' } };
+    return { outOfArea: false, line: { label: `${distance.city || 'Carrollton'} address: no distance fee`, price: fixed(0), status: 'ok', free: true } };
   }
   const rounded = Math.round(distance.miles);
   if (rounded > d.maxServiceMiles) return { outOfArea: true };

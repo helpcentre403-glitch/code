@@ -48,9 +48,11 @@ function createApi({ store, distance, ai = null, sms = null, now = () => new Dat
           message: "We couldn't measure the driving distance right now. We saved your request and will text you, or you can call or text us.",
         });
       }
+      // Letters are compared with doubles squeezed out, so "Carrolton" and "Carollton" still match "Carrollton".
+      const squeeze = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/([a-z])\1+/g, '$1');
       const free = settings.business.freeCities.some((c) => (dist.city
-        ? dist.city.toLowerCase() === c.toLowerCase()
-        : new RegExp(`\\b${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(data.address)));
+        ? squeeze(dist.city).trim() === squeeze(c).trim()
+        : ` ${squeeze(data.address)} `.includes(` ${squeeze(c).trim()} `)));
       const distanceInfo = { miles: Math.round(dist.miles * 10) / 10, city: dist.city, free, formattedAddress: dist.formattedAddress };
 
       const estimate = pricing.computeEstimate(data, settings, distanceInfo, { isSameDay });

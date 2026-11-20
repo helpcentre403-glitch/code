@@ -13,6 +13,7 @@ const FIXED_NOW = new Date('2026-12-07T18:00:00Z');
 const STUB = {
   carrollton: { miles: 3.2, city: 'Carrollton' },
   addison: { miles: 6.1, city: 'Addison' },
+  nocity: { miles: 4.0, city: null },
   nine: { miles: 9.4, city: 'Farmers Branch' },
   tenish: { miles: 9.6, city: 'Farmers Branch' },
   plano: { miles: 14.8, city: 'Plano' },

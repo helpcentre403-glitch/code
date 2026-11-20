@@ -1,5 +1,6 @@
 /* SAE Outdoor and Haul: mobile-first, one accent color. */
 :root {
+  color-scheme: light; /* keep form controls light even when the phone is in dark mode */
   --ink: #17140f;
   --ink-2: #4a443b;
   --paper: #faf7f1;
@@ -295,5 +296,13 @@ details.lead { border-top: 1px solid var(--line); padding: 10px 0; }
 .chosen-slot:empty { display: none; }
 .callout { background: var(--accent-soft); border-left: 4px solid var(--accent); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
 .callout p { margin: 4px 0 0; }
-.day-row .slot { white-space: nowrap; padding: 0 4px; font-size: .95rem; }
-.day-row .slot-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+
+/* Buttons and fields never take the phone's dark-mode text color (white on white) */
+button, input, select, textarea { color: var(--ink); }
+.date-chip, .slot, .step-btn { color: var(--ink); -webkit-text-fill-color: currentColor; }
+.date-chip .count { font-size: .72rem; font-weight: 700; color: var(--ink-2); }
+.date-chip[aria-checked=true] .count, .date-chip[aria-checked=true], .slot[aria-checked=true] { color: #fff; }
+.date-chip { min-height: 74px; }
+.day-title { font-weight: 800; margin: 10px 0 6px; }
+.slot { white-space: nowrap; padding: 0 4px; }
+.btn-accent { color: var(--accent-ink); }

@@ -53,7 +53,7 @@
       + '<fieldset class="step"><legend><span class="num">' + (n + 1) + '</span> Address</legend>'
       + '<label class="label" for="' + id + '-address">Service address (street, city, ZIP)</label>'
       + '<input id="' + id + '-address" name="address" autocomplete="street-address" maxlength="300" placeholder="123 Main St, Carrollton, TX 75006">'
-      + '<p class="hint">We use this to measure the driving distance fee. Homes in Carrollton pay no travel fee.</p>'
+      + '<p class="hint">We use this to measure the driving distance fee. Homes in Carrollton pay no distance fee.</p>'
       + '<p class="field-error" data-error="address"></p></fieldset>'
       + '<fieldset class="step"><legend><span class="num">' + (n + 2) + '</span> Your contact info</legend>'
       + '<label class="label" for="' + id + '-name">Name</label>'
@@ -70,8 +70,7 @@
     renderCalendar(form);
   }
 
-  // Every open date is listed with all of its open times visible. One tap picks date + time.
-  var DAYS_SHOWN = 7;
+  // Sideways-scrolling date row; the first open date is picked automatically so its times show right away.
   function renderCalendar(form) {
     var host = form.querySelector('[data-calendar]');
     var dateInput = form.querySelector('input[name="date"]');
@@ -83,38 +82,42 @@
       host.appendChild(el('p', { class: 'alert', text: 'No open times right now. Please call or text us.' }));
       return;
     }
-    var list = el('div', { class: 'day-list', role: 'radiogroup', 'aria-label': 'Date and time' });
+    var dates = el('div', { class: 'date-strip', role: 'radiogroup', 'aria-label': 'Date' });
+    var dayTitle = el('p', { class: 'day-title' });
+    var slots = el('div', { class: 'slot-grid', role: 'radiogroup', 'aria-label': 'Time' });
     var chosen = el('p', { class: 'chosen-slot', 'aria-live': 'polite' });
-    availability.forEach(function (d, i) {
-      var head = el('div', { class: 'day-head' }, [
-        el('strong', { text: d.isToday ? 'Today, ' + (d.label.split(', ')[1] || d.label) : d.label }),
+    availability.forEach(function (d) {
+      var b = el('button', { type: 'button', class: 'date-chip', 'data-date': d.date, role: 'radio', 'aria-checked': 'false' }, [
+        el('span', { class: 'dow', text: d.isToday ? 'Today' : d.label.split(',')[0] }),
+        el('span', { class: 'dm', text: d.label.split(', ')[1] || d.label }),
+        el('span', { class: 'count', text: d.slots.length + (d.slots.length === 1 ? ' time' : ' times') }),
       ]);
-      if (d.isToday && isJunk) head.appendChild(el('span', { class: 'day-note', text: 'Same-day adds ' + config.junk.extras.sameDay }));
-      var grid = el('div', { class: 'slot-grid' });
+      b.addEventListener('click', function () { pickDate(d); });
+      dates.appendChild(b);
+    });
+    function pickDate(d) {
+      if (dateInput.value !== d.date) { timeInput.value = ''; chosen.textContent = ''; }
+      dateInput.value = d.date;
+      dates.querySelectorAll('.date-chip').forEach(function (c) { c.setAttribute('aria-checked', String(c.getAttribute('data-date') === d.date)); });
+      dayTitle.textContent = 'Open times on ' + d.label + ':';
+      slots.innerHTML = '';
       d.slots.forEach(function (s) {
-        var sb = el('button', { type: 'button', class: 'slot', role: 'radio', 'aria-checked': 'false', 'data-date': d.date, 'data-time': s.time, text: s.label,
-          'aria-label': d.label + ' at ' + s.label });
+        var sb = el('button', { type: 'button', class: 'slot', role: 'radio', 'aria-checked': 'false', 'data-time': s.time, text: s.label });
         sb.addEventListener('click', function () {
           dateInput.value = d.date; timeInput.value = s.time;
-          list.querySelectorAll('.slot').forEach(function (x) { x.setAttribute('aria-checked', String(x === sb)); });
+          slots.querySelectorAll('.slot').forEach(function (x) { x.setAttribute('aria-checked', String(x === sb)); });
           chosen.textContent = 'Selected: ' + d.label + ' at ' + s.label;
         });
-        grid.appendChild(sb);
+        slots.appendChild(sb);
       });
-      var row = el('div', { class: 'day-row', 'data-date': d.date }, [head, grid]);
-      if (i >= DAYS_SHOWN) row.hidden = true;
-      list.appendChild(row);
-    });
-    host.appendChild(list);
-    if (availability.length > DAYS_SHOWN) {
-      var more = el('button', { type: 'button', class: 'btn btn-light btn-small show-more', text: 'Show more dates (' + (availability.length - DAYS_SHOWN) + ')' });
-      more.addEventListener('click', function () {
-        list.querySelectorAll('.day-row[hidden]').forEach(function (r) { r.hidden = false; });
-        more.remove();
-      });
-      host.appendChild(more);
+      if (d.isToday && isJunk) slots.appendChild(el('p', { class: 'hint full', text: 'Same-day service adds ' + config.junk.extras.sameDay + '.' }));
     }
+    host.appendChild(el('p', { class: 'hint', text: 'Swipe for more dates, then tap a time.' }));
+    host.appendChild(dates);
+    host.appendChild(dayTitle);
+    host.appendChild(slots);
     host.appendChild(chosen);
+    pickDate(availability[0]);
   }
 
   // ---------- Junk ----------

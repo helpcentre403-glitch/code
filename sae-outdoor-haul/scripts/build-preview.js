@@ -124,7 +124,7 @@ ${modSrc}
   var milesInput = document.getElementById('pv-miles');
   var distance = {
     measure: function (origin, dest) {
-      if (/carrollton|\\b750(06|07|10)\\b/i.test(dest)) return Promise.resolve({ miles: 3, city: 'Carrollton', formattedAddress: dest });
+      if (/\\bcar[a-z]{2,6}ton\\b|\\b750(06|07|10)\\b/i.test(dest)) return Promise.resolve({ miles: 3, city: 'Carrollton', formattedAddress: dest });
       var m = Number(milesInput.value);
       if (!isFinite(m) || m < 0) m = 12;
       return Promise.resolve({ miles: m, city: null, formattedAddress: dest });

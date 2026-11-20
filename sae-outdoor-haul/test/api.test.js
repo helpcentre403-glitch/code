@@ -95,8 +95,12 @@ test('distance bands through the API, Carrollton free, over 20 miles = contact u
       return r.json;
     };
     const distLine = (j) => j.estimate.sections.find((x) => x.title === 'Distance fee').lines[0];
-    assert.equal(distLine(await fee('5 Elm St, Carrollton, TX 75006')).display, '$0');
-    assert.match(distLine(await fee('5 Elm St, Carrollton, TX 75006')).label, /Carrollton address: no travel fee/);
+    assert.equal(distLine(await fee('5 Elm St, Carrollton, TX 75006')).display, 'No fee');
+    // Map service gave no city: a misspelled "Carrolton" in the address still counts as Carrollton
+    assert.equal(distLine(await fee('2 nocity Rd, Carrolton TX')).display, 'No fee');
+    assert.equal(distLine(await fee('2 nocity Rd, Carollton TX')).display, 'No fee');
+    assert.equal(distLine(await fee('2 nocity Rd, Dallas TX')).display, '$10');
+    assert.match(distLine(await fee('5 Elm St, Carrollton, TX 75006')).label, /Carrollton address: no distance fee/);
     assert.equal(distLine(await fee('1 Belt Line Rd, Addison')).display, '$10');
     assert.equal(distLine(await fee('nine road')).display, '$10');
     assert.equal(distLine(await fee('tenish road')).display, '$20');
