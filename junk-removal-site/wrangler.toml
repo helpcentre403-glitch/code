@@ -1,0 +1,4 @@
+# Cloudflare Pages: static site in dist/, functions in functions/ (auto-detected).
+name = "junk-removal-site"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-09-23"

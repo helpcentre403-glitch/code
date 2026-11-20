@@ -1,0 +1,14 @@
+{
+  "name": "junk-removal-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lead-generation website for a DFW weekend junk removal business. Owner-controlled code, hosting and lead data.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "node build.mjs && node dev/server.mjs",
+    "build": "node build.mjs",
+    "test": "node --test test/unit.test.mjs && node build.mjs && node test/e2e.mjs",
+    "setup:sheet": "node scripts/setup-sheet.mjs"
+  }
+}

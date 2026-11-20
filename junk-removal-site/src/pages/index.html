@@ -1,0 +1,131 @@
+<section class="hero">
+  <div class="container">
+    <p class="eyebrow">Weekends only &middot; {{ b.region }}</p>
+    <h1>Junk removal in {{ areaShort }}, on weekends</h1>
+    <p class="lead">Send a few details, get your quote by text, and pick a weekend pickup time.</p>
+    <a class="btn btn-big" href="#quote">Get my free quote</a>
+  </div>
+</section>
+
+{{> quote-form }}
+
+<section class="section" aria-labelledby="proof-h">
+  <div class="container">
+    <h2 id="proof-h">Recent jobs</h2>
+    <div class="grid-2">
+      <figure class="ba">
+        <div class="ba-pair">
+          <img src="/assets/img/placeholder-before.svg" alt="TODO: describe the before photo, e.g. garage full of boxes in Plano" width="800" height="600" loading="lazy" decoding="async">
+          <img src="/assets/img/placeholder-after.svg" alt="TODO: describe the after photo, e.g. same garage cleared" width="800" height="600" loading="lazy" decoding="async">
+        </div>
+        <figcaption>[BEFORE AND AFTER CAPTION: job type and city]</figcaption>
+      </figure>
+      <figure class="ba">
+        <div class="ba-pair">
+          <img src="/assets/img/placeholder-before.svg" alt="TODO: describe the before photo" width="800" height="600" loading="lazy" decoding="async">
+          <img src="/assets/img/placeholder-after.svg" alt="TODO: describe the after photo" width="800" height="600" loading="lazy" decoding="async">
+        </div>
+        <figcaption>[BEFORE AND AFTER CAPTION: job type and city]</figcaption>
+      </figure>
+    </div>
+
+    <h3 class="sub-h">What customers say</h3>
+    <div class="grid-3">
+      <blockquote class="card quote"><p>[REVIEW QUOTE 1: paste a real review, with permission]</p><footer>[FIRST NAME, CITY]</footer></blockquote>
+      <blockquote class="card quote"><p>[REVIEW QUOTE 2]</p><footer>[FIRST NAME, CITY]</footer></blockquote>
+      <blockquote class="card quote"><p>[REVIEW QUOTE 3]</p><footer>[FIRST NAME, CITY]</footer></blockquote>
+    </div>
+    <p><a class="link-strong" href="{{ reviewsHref }}" rel="noopener" target="_blank">Read our reviews on Google</a></p>
+  </div>
+</section>
+
+<section class="section alt" aria-labelledby="how-h">
+  <div class="container">
+    <h2 id="how-h">How it works</h2>
+    <ol class="steps">
+      <li><span class="step-n" aria-hidden="true">1</span><h3>Send details</h3><p>Fill out the form above or text us. Photos help.</p></li>
+      <li><span class="step-n" aria-hidden="true">2</span><h3>Get your quote</h3><p>We text you a quote based on what you are getting rid of.</p></li>
+      <li><span class="step-n" aria-hidden="true">3</span><h3>Pick a weekend time</h3><p>Choose a Saturday or Sunday time that works and we haul it away.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="take-h">
+  <div class="container grid-2">
+    <div>
+      <h2 id="take-h">What we take</h2>
+      <ul class="checks">
+        <li>[CONFIRM: furniture (couches, mattresses, dressers, tables)]</li>
+        <li>[CONFIRM: appliances without refrigerant (washers, dryers, stoves)]</li>
+        <li>[CONFIRM: boxes, clutter and household junk]</li>
+        <li>[CONFIRM: yard debris and branches]</li>
+        <li>[CONFIRM: garage and storage items]</li>
+        <li>[CONFIRM: electronics and TVs]</li>
+      </ul>
+    </div>
+    <div>
+      <h2>What we don't take</h2>
+      <ul class="crosses">
+        {{{ notAcceptedList }}}
+      </ul>
+      <p class="muted">Not sure about an item? Ask in the form or text us.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section alt" aria-labelledby="price-h">
+  <div class="container narrow">
+    <h2 id="price-h">Pricing</h2>
+    <p class="price-start">Starting at <strong>{{ pricing.startingAt }}</strong></p>
+    <p>{{ pricing.policyText }}</p>
+    <h3>What changes the price</h3>
+    <ul>
+      <li>How much space your items take up in the truck</li>
+      <li>Heavy or bulky items</li>
+      <li>Access: stairs, long carries, or tight spaces</li>
+      <li>[CONFIRM: items with extra disposal fees, e.g. mattresses or appliances]</li>
+    </ul>
+    <a class="btn" href="#quote">Get my free quote</a>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="area-h">
+  <div class="container">
+    <h2 id="area-h">Service area</h2>
+    <p>We pick up on weekends in these {{ b.region }} cities and nearby:</p>
+    <ul class="cities">
+      {{{ cityList }}}
+    </ul>
+    <p class="note"><strong>Don't see your city?</strong> Ask anyway. Send the form or <a class="js-contact" data-method="text" href="{{ smsHref }}">text us</a> with your ZIP code.</p>
+  </div>
+</section>
+
+<section class="section alt" aria-labelledby="faq-h">
+  <div class="container narrow">
+    <h2 id="faq-h">Questions</h2>
+    <div class="faq">
+      <details><summary>How much does junk removal cost?</summary><p>TODO: answer. Mention the starting price and that the quote is confirmed before pickup, if that is the policy.</p></details>
+      <details><summary>Do you work on weekdays?</summary><p>TODO: answer. We work weekends only; say what happens if someone needs a weekday.</p></details>
+      <details><summary>How do I get a quote?</summary><p>TODO: answer. Form or text, photos help, how fast we reply.</p></details>
+      <details><summary>Do I need to be home for the pickup?</summary><p>TODO: answer.</p></details>
+      <details><summary>Do you carry items out of the house, or do I need to put them at the curb?</summary><p>TODO: answer.</p></details>
+      <details><summary>What items can't you take?</summary><p>TODO: answer. Match the "What we don't take" list.</p></details>
+      <details><summary>How soon can you come?</summary><p>TODO: answer.</p></details>
+      <details><summary>What happens to my stuff?</summary><p>TODO: answer. Only claim donation or recycling if you actually do it.</p></details>
+      <details><summary>Do you serve my city?</summary><p>TODO: answer. List the main cities and invite people to ask.</p></details>
+      <details><summary>How do I pay?</summary><p>TODO: answer. Payment methods accepted and when payment is due.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="about-h">
+  <div class="container about">
+    <img src="/assets/img/placeholder-owner.svg" alt="TODO: owner's name, e.g. Photo of [OWNER NAME], owner of {{ b.name }}" width="600" height="600" loading="lazy" decoding="async">
+    <div>
+      <h2 id="about-h">About us</h2>
+      <p>[OWNER STORY: 2 to 4 sentences. Who you are, why you started, why weekends.]</p>
+      {{{ licensedLine }}}
+      <a class="btn" href="#quote">Get my free quote</a>
+    </div>
+  </div>
+</section>

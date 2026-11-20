@@ -1,0 +1,28 @@
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div>
+      <p class="footer-brand">{{ b.name }}</p>
+      <p>Weekend junk removal in {{ b.region }}.</p>
+      {{{ licensedLine }}}
+    </div>
+    <div>
+      <h2 class="footer-h">Contact</h2>
+      <ul class="plain">
+        <li>Call: <a class="js-contact" data-method="call" href="{{ telHref }}">{{ b.phone }}</a></li>
+        <li>Text: <a class="js-contact" data-method="text" href="{{ smsHref }}">{{ b.textNumber }}</a></li>
+        <li>Email: <a href="{{ mailHref }}">{{ b.email }}</a></li>
+        <li>Hours: {{ b.hoursText }} (weekends only)</li>
+      </ul>
+    </div>
+    <div>
+      <h2 class="footer-h">Links</h2>
+      <ul class="plain">
+        <li><a href="/#quote">Get a free quote</a></li>
+        <li><a href="/services">Services</a></li>
+        <li><a href="/privacy">Privacy policy</a></li>
+        <li><a href="/terms">Terms</a></li>
+      </ul>
+    </div>
+  </div>
+  <p class="container copyright">&copy; {{ year }} {{ b.name }}</p>
+</footer>

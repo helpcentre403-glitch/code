@@ -1,0 +1,12 @@
+# Response headers. Read by both Netlify and Cloudflare Pages.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/assets/*
+  Cache-Control: public, max-age=604800
+
+/thank-you
+  X-Robots-Tag: noindex
