@@ -107,15 +107,9 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
       try {
         dist = await distance.measure(settings.business.baseAddress, data.address);
       } catch (e) {
-        if (e instanceof DistanceError && e.code === 'not_found') {
-          return ok({ status: 'needs_info', questions: [{ field: 'address', message: "We couldn't find that address. Check the street, city, and ZIP code." }] });
-        }
-        log.error('distance lookup failed:', e.message);
-        const lead = store.addLead({ service, answers: data, contact: data.contact, status: 'needs_follow_up', problem: 'Distance lookup failed' });
-        return ok({
-          status: 'distance_unavailable', leadId: lead.id,
-          message: "We couldn't measure the driving distance right now. We saved your request and will text you, or you can call or text us.",
-        });
+        // Don't turn the customer away: price it from their Inside/Outside choice and let the crew check the address.
+        log.error(`Distance not measured (${e instanceof DistanceError ? e.code : 'error'}: ${e.message}); using the customer's Inside/Outside choice.`);
+        dist = { miles: null, city: null, unverified: true };
       }
       // Inside/outside the free city: the map's city wins when it has one (owner's rule); otherwise the
       // customer's "Inside / Outside of Carrollton" choice decides. A disagreement is flagged for the crew.
@@ -127,11 +121,15 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
       const zoneMismatch = Boolean(dist.city) && free !== choseInside;
       const cityName = settings.business.freeCities[0] || 'the city';
       const distanceInfo = {
-        miles: Math.round(dist.miles * 10) / 10, city: free ? (freeCity || cityName) : dist.city, free, formattedAddress: dist.formattedAddress,
-        customerChose: data.cityZone, zoneMismatch,
+        miles: typeof dist.miles === 'number' ? Math.round(dist.miles * 10) / 10 : null,
+        city: free ? (freeCity || cityName) : dist.city, free, formattedAddress: dist.formattedAddress,
+        customerChose: data.cityZone, zoneMismatch, unverified: Boolean(dist.unverified), approximate: Boolean(dist.approximate),
       };
 
       const estimate = pricing.computeEstimate(data, settings, distanceInfo, { isSameDay });
+      if (distanceInfo.unverified && !estimate.outOfArea) {
+        estimate.notes.unshift("We couldn't check this address on the map, so the distance fee is based on your Inside/Outside choice. Our crew will confirm the address before your visit.");
+      }
       if (zoneMismatch && !estimate.outOfArea) {
         estimate.notes.unshift(free
           ? `You picked outside of ${cityName}, but the map places this address in ${cityName}, so there is no distance fee. Our crew will double-check.`
@@ -162,6 +160,7 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
 
       const lead = store.addLead({
         service, answers: data, contact: data.contact, distance: distanceInfo, sameDay: isSameDay, zoneMismatch,
+        addressUnverified: distanceInfo.unverified,
         estimate, summary, aiQuestions, booking: { date: data.date, time: data.time, status: 'requested' },
       });
       return ok({ status: 'ok', leadId: lead.id, estimate: decorate(estimate), summary, disclaimer: DISCLAIMER, date: data.date, time: data.time, dateLabel: `${cal.formatDate(data.date)}, ${cal.formatTime(data.time)}` });

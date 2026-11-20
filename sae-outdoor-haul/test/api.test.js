@@ -176,9 +176,14 @@ test('inside/outside Carrollton buttons: $0 inside, flat $10 outside, map wins, 
     assert.equal(far.status, 'out_of_area');
     assert.match(far.message, /more than 20 driving miles/);
     assert.match(far.message, /Contact us/);
-    const unknown = await fee('Nowhere Special');
-    assert.equal(unknown.status, 'needs_info');
-    assert.equal(unknown.questions[0].field, 'address');
+    // Address the map can't place: still priced from the button, with a note, and flagged for the crew
+    const unknown = await fee('Nowhere Special', 'outside');
+    assert.equal(unknown.status, 'ok');
+    assert.equal(distLine(unknown).display, '$10');
+    assert.match(distLine(unknown).label, /address to be confirmed/);
+    assert.match(unknown.estimate.notes[0], /couldn't check this address on the map/);
+    const unknownInside = await fee('Nowhere Special', 'inside');
+    assert.equal(distLine(unknownInside).display, 'No fee');
     const leads = (await s.admin('GET', '/api/admin/leads')).json.leads;
     assert.ok(leads.some((l) => l.status === 'out_of_area'), 'out-of-area request saved as a lead');
   } finally { await s.close(); }
@@ -383,4 +388,27 @@ test('address suggestion endpoint', async () => {
     assert.equal(r.suggestions.length, 2);
     assert.deepEqual((await s.get('/api/address-suggest?q=ab')).json.suggestions, []);
   } finally { await s.close(); }
+});
+
+test('map service down: estimate still works from the Inside/Outside choice and the lead is flagged', async () => {
+  const { createApp } = require('../server');
+  const { tmpDir, pricedSettings: ps } = require('./helpers');
+  const fs = require('fs');
+  const path = require('path');
+  const dataDir = tmpDir();
+  fs.writeFileSync(path.join(dataDir, 'settings.json'), JSON.stringify(ps()));
+  const app = createApp({ dataDir, adminPassword: 'p', ai: null, sms: null, mailer: null, now: () => new Date('2026-12-07T18:00:00Z'),
+    distance: { measure: async () => { throw new Error('map service down'); } }, log: { error() {}, log() {} },
+    addressSuggester: { provider: 'photon', suggest: async () => [] } });
+  const server = await new Promise((r) => { const sv = app.listen(0, () => r(sv)); });
+  try {
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const res = await fetch(`${base}/api/estimate`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-12', time: '10:00', address: '123 Some Rd', cityZone: 'outside' }, contact }) });
+    const j = await res.json();
+    assert.equal(j.status, 'ok');
+    assert.equal(j.estimate.totalDisplay, '$40');
+    const leads = await (await fetch(`${base}/api/admin/leads`, { headers: { Authorization: `Basic ${Buffer.from('admin:p').toString('base64')}` } })).json();
+    assert.equal(leads.leads[0].addressUnverified, true);
+  } finally { await new Promise((r) => server.close(r)); }
 });

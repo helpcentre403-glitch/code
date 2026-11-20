@@ -59,7 +59,38 @@ function googleProvider({ apiKey, fetchImpl }) {
 function osrmProvider({ fetchImpl }) {
   // Generic app identifier only (Nominatim requires a User-Agent); no personal details.
   const headers = { 'User-Agent': 'LocalServiceQuoteSite/1.0', 'Accept-Language': 'en' };
+  const geoCache = new Map();
+  // Simpler versions of an address to try when the exact one isn't found:
+  // drop apartment/unit parts, then keep only street + city/ZIP, then only city/ZIP.
+  function variants(q) {
+    const out = [q];
+    const noUnit = q.replace(/\b(apt|apartment|unit|suite|ste|bldg|building|lot|#)\s*[\w-]+/gi, '').replace(/\s*,\s*,/g, ',').replace(/\s{2,}/g, ' ').trim();
+    out.push(noUnit);
+    const parts = noUnit.split(',').map((x) => x.trim()).filter(Boolean);
+    const zip = (noUnit.match(/\b7\d{4}\b/) || [])[0];
+    if (parts.length >= 2) out.push(`${parts[0]}, ${parts[parts.length - 1]}`);
+    if (parts.length >= 2) out.push(parts.slice(1).join(', '));
+    if (zip) out.push(`${zip}, TX`);
+    return [...new Set(out.filter((x) => x && x.length >= 3))];
+  }
   async function geocode(q) {
+    const key = q.toLowerCase().replace(/\s+/g, ' ').trim();
+    if (geoCache.has(key)) return geoCache.get(key);
+    let lastErr = null;
+    for (const v of variants(q)) {
+      try {
+        const r = { ...(await geocodeOnce(v)), approximate: v !== q };
+        if (geoCache.size > 2000) geoCache.clear();
+        geoCache.set(key, r);
+        return r;
+      } catch (e) {
+        if (!(e instanceof DistanceError) || e.code !== 'not_found') throw e;
+        lastErr = e;
+      }
+    }
+    throw lastErr || new DistanceError('not_found', 'Address not found');
+  }
+  async function geocodeOnce(q) {
     const url = new URL('https://nominatim.openstreetmap.org/search');
     url.searchParams.set('format', 'jsonv2');
     url.searchParams.set('addressdetails', '1');
@@ -72,12 +103,14 @@ function osrmProvider({ fetchImpl }) {
     return { lat: data[0].lat, lon: data[0].lon, city: a.city || a.town || a.village || null, formatted: data[0].display_name };
   }
   return async (origin, destination) => {
-    const [o, d] = await Promise.all([geocode(origin), geocode(destination)]);
+    // One at a time (Nominatim allows about 1 request per second); the base address is cached after the first time.
+    const o = await geocode(origin);
+    const d = await geocode(destination);
     const url = `https://router.project-osrm.org/route/v1/driving/${o.lon},${o.lat};${d.lon},${d.lat}?overview=false`;
     const data = await getJson(fetchImpl, url, { headers });
     const meters = data.routes?.[0]?.distance;
     if (data.code !== 'Ok' || typeof meters !== 'number') throw new DistanceError('not_found', 'No driving route');
-    return { miles: meters / METERS_PER_MILE, formattedAddress: d.formatted, city: d.city };
+    return { miles: meters / METERS_PER_MILE, formattedAddress: d.formatted, city: d.city, approximate: d.approximate };
   };
 }
 

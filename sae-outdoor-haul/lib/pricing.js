@@ -122,6 +122,11 @@ function distanceLine(rates, distance) {
   if (distance.free) {
     return { outOfArea: false, line: { label: `${distance.city || 'Carrollton'} address: no distance fee`, price: fixed(0), status: 'ok', free: true } };
   }
+  if (distance.unverified || typeof distance.miles !== 'number') {
+    const first = [...d.bands].sort((x, y) => x.maxMiles - y.maxMiles)[0];
+    const price = first ? fixed(first.fee) : null;
+    return { outOfArea: false, line: { label: `${first ? first.label : 'Distance'} (address to be confirmed)`, price, status: price ? 'ok' : 'tbd' } };
+  }
   const rounded = Math.round(distance.miles);
   if (rounded > d.maxServiceMiles) return { outOfArea: true };
   const band = [...d.bands].sort((x, y) => x.maxMiles - y.maxMiles).find((b) => rounded <= b.maxMiles);

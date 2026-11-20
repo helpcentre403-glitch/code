@@ -53,6 +53,7 @@
             row('Email', (l.contact && l.contact.email) || '-'),
             row('Address', (l.answers && l.answers.address) || '-'),
             row('Distance', l.distance ? l.distance.miles + ' mi' + (l.distance.city ? ' (' + l.distance.city + ')' : '') + (l.distance.free ? ' - no fee' : '') : '-'),
+            row('Address check', l.addressUnverified ? 'NOT FOUND ON THE MAP - confirm the address and distance' : (l.distance && l.distance.approximate ? 'Approximate (matched street/city/ZIP)' : 'OK')),
             row('Customer said', l.distance && l.distance.customerChose ? l.distance.customerChose + ' of the city' + (l.zoneMismatch ? ' (DOES NOT MATCH THE MAP - check this address)' : '') : '-'),
             row('Owner alerted', l.booking && l.booking.status === 'booked' ? [l.ownerEmailed ? 'emailed' : 'not emailed', l.ownerTexted ? 'texted' : 'not texted'].join(', ') : '-'),
             row('Date / time', b),

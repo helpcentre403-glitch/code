@@ -296,3 +296,27 @@ test('server starts the way Render starts it (real services, Google key set, not
     process.env = saved;
   }
 });
+
+test('free map lookup retries simpler versions of an address and caches results', async () => {
+  const { createDistanceService } = require('../lib/distance');
+  const asked = [];
+  const fetchImpl = async (url) => {
+    const u = new URL(String(url));
+    if (u.hostname.includes('nominatim')) {
+      const q = u.searchParams.get('q');
+      asked.push(q);
+      const found = q === 'Carrollton, TX' || q === '75006, TX';
+      return { ok: true, json: async () => (found ? [{ lat: '32.95', lon: '-96.89', address: { city: 'Carrollton' }, display_name: q }] : []) };
+    }
+    return { ok: true, json: async () => ({ code: 'Ok', routes: [{ distance: 3218.69 }] }) };
+  };
+  const d = createDistanceService({ provider: 'osrm', fetchImpl });
+  const r = await d.measure('Carrollton, TX', '999 Madeup Ln Apt 4B, Carrollton TX 75006');
+  assert.equal(r.city, 'Carrollton');
+  assert.equal(r.approximate, true);
+  assert.ok(asked.includes('75006, TX'), asked.join(' | '));
+  assert.ok(asked.some((q) => !/apt/i.test(q) && /Madeup/.test(q)), 'tried without the apartment number');
+  const before = asked.length;
+  await d.measure('Carrollton, TX', '1 Other St, 75006');
+  assert.ok(!asked.slice(before).includes('Carrollton, TX'), 'base address looked up only once');
+});
