@@ -264,7 +264,7 @@ input[type=range] { width: 100%; height: 44px; accent-color: var(--accent); curs
 .biz-field { display: grid; gap: 4px; font-weight: 700; margin-bottom: 12px; }
 .tag-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .tag-list li { background: #f1ebe0; border-radius: 999px; padding: 4px 12px; }
-.lead { border-top: 1px solid var(--line); padding: 10px 0; }
+details.lead { border-top: 1px solid var(--line); padding: 10px 0; }
 .lead summary { cursor: pointer; padding: 6px 0; }
 .lead dl { display: grid; gap: 4px; margin: 8px 0; }
 .lead dl div { display: grid; grid-template-columns: 150px 1fr; gap: 8px; font-size: .92rem; }

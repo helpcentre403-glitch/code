@@ -1,0 +1,195 @@
+'use strict';
+/**
+ * The site's API logic, independent of Express. Each handler returns { status, json }.
+ * server.js wires these to HTTP routes; the browser preview calls them directly.
+ */
+const cal = require('./calendar');
+const pricing = require('./pricing');
+const { DistanceError } = require('./distance');
+const { DISCLAIMER, phoneDisplay, publicConfig, decorate, validateSettings } = require('./pages');
+
+const ok = (json) => ({ status: 200, json });
+const fail = (status, json) => ({ status, json });
+
+function createApi({ store, distance, ai = null, sms = null, now = () => new Date(), log = console, defaults = null }) {
+  const bookedKeys = () => new Set(
+    store.listLeads().filter((l) => l.booking && l.booking.status === 'booked').map((l) => cal.slotKey(l.booking.date, l.booking.time)),
+  );
+
+  return {
+    config: () => ok(publicConfig(store.getSettings())),
+
+    availability: () => ok({ days: cal.availability(store.getSettings().schedule, bookedKeys(), now()) }),
+
+    async estimate(body) {
+      body = body || {};
+      const settings = store.getSettings();
+      const service = String(body.service || '');
+      const { errors, data } = pricing.validate(service, body, settings);
+      if (errors.length) return ok({ status: 'needs_info', questions: errors });
+
+      const schedule = settings.schedule;
+      if (!cal.isSlotAvailable(schedule, bookedKeys(), data.date, data.time, now())) {
+        return ok({ status: 'needs_info', questions: [{ field: 'date', message: 'That date and time is no longer available. Please pick another one.' }] });
+      }
+      const isSameDay = data.date === cal.nowInZone(schedule.timezone, now()).date;
+
+      let dist;
+      try {
+        dist = await distance.measure(settings.business.baseAddress, data.address);
+      } catch (e) {
+        if (e instanceof DistanceError && e.code === 'not_found') {
+          return ok({ status: 'needs_info', questions: [{ field: 'address', message: "We couldn't find that address. Check the street, city, and ZIP code." }] });
+        }
+        log.error('distance lookup failed:', e.message);
+        const lead = store.addLead({ service, answers: data, contact: data.contact, status: 'needs_follow_up', problem: 'Distance lookup failed' });
+        return ok({
+          status: 'distance_unavailable', leadId: lead.id,
+          message: "We couldn't measure the driving distance right now. We saved your request and will text you, or you can call or text us.",
+        });
+      }
+      const free = settings.business.freeCities.some((c) => (dist.city
+        ? dist.city.toLowerCase() === c.toLowerCase()
+        : new RegExp(`\\b${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(data.address)));
+      const distanceInfo = { miles: Math.round(dist.miles * 10) / 10, city: dist.city, free, formattedAddress: dist.formattedAddress };
+
+      const estimate = pricing.computeEstimate(data, settings, distanceInfo, { isSameDay });
+      if (estimate.outOfArea) {
+        store.addLead({ service, answers: data, contact: data.contact, distance: distanceInfo, status: 'out_of_area' });
+        return ok({
+          status: 'out_of_area',
+          message: `That address is more than ${settings.rates.distance.maxServiceMiles} driving miles from our base, so we can't give an online estimate. Contact us. We may still be able to help, depending on our schedule.`,
+        });
+      }
+
+      let summary = null;
+      let aiQuestions = [];
+      if (ai) {
+        try {
+          const r = await ai.review({ data, estimate });
+          if (r) { summary = r.summary; aiQuestions = r.questions; }
+        } catch (e) {
+          log.error('AI review failed (using template summary):', e.message);
+        }
+        if (aiQuestions.length && body.aiAcknowledged !== true) {
+          return ok({ status: 'needs_info', aiQuestions: true, questions: aiQuestions.map((message) => ({ field: 'ai', message })) });
+        }
+      }
+      summary = summary || pricing.templateSummary(data, estimate, settings);
+
+      const lead = store.addLead({
+        service, answers: data, contact: data.contact, distance: distanceInfo, sameDay: isSameDay,
+        estimate, summary, aiQuestions, booking: { date: data.date, time: data.time, status: 'requested' },
+      });
+      return ok({ status: 'ok', leadId: lead.id, estimate: decorate(estimate), summary, disclaimer: DISCLAIMER, date: data.date, time: data.time, dateLabel: `${cal.formatDate(data.date)}, ${cal.formatTime(data.time)}` });
+    },
+
+    async textQuote(id) {
+      const lead = store.getLead(id);
+      if (!lead || !lead.estimate) return fail(404, { status: 'error', message: 'Quote not found.' });
+      const settings = store.getSettings();
+      const text = `${settings.business.name} estimate: ${pricing.formatPrice(lead.estimate.total)}. ${lead.summary} ${DISCLAIMER} Reply here or call ${phoneDisplay(settings.business.phone) || ''}.`;
+      let sent = false;
+      if (sms) {
+        try { sent = await sms.send(lead.contact.phone, text.slice(0, 1500)); } catch (e) { log.error('SMS failed:', e.message); }
+      }
+      store.updateLead(lead.id, { textRequested: true, textSent: sent });
+      return ok({ status: 'ok', sent });
+    },
+
+    book(id) {
+      const lead = store.getLead(id);
+      if (!lead || !lead.booking) return fail(404, { status: 'error', message: 'Quote not found.' });
+      if (lead.booking.status === 'booked') return ok({ status: 'ok' });
+      const { date, time } = lead.booking;
+      if (!cal.isSlotAvailable(store.getSettings().schedule, bookedKeys(), date, time, now())) {
+        return fail(409, { status: 'error', message: 'Sorry, that time was just taken. Please pick another time and generate a new estimate, or call or text us.' });
+      }
+      store.updateLead(lead.id, { booking: { ...lead.booking, status: 'booked', bookedAt: now().toISOString() }, status: 'booked' });
+      return ok({ status: 'ok' });
+    },
+
+    // ---------- Admin ----------
+    getSettings: () => ok(store.getSettings()),
+
+    putSettings(body) {
+      const problems = validateSettings(body);
+      if (problems.length) return fail(400, { status: 'error', problems });
+      store.saveSettings(body);
+      return ok({ status: 'ok', settings: store.getSettings() });
+    },
+
+    defaults: () => ok(defaults ? defaults() : null),
+
+    calendar(query = {}) {
+      const s = store.getSettings().schedule;
+      const booked = bookedKeys();
+      const days = Math.max(1, Math.min(120, Number(query.days) || s.bookingWindowDays));
+      const start = cal.nowInZone(s.timezone, now()).date;
+      const out = Array.from({ length: days }, (_, i) => cal.addDays(start, i)).map((date) => ({
+        date, label: cal.formatDate(date), holiday: s.holidays.includes(date), blocked: s.blockedDates.includes(date),
+        special: (s.specialHours || []).find((x) => x.date === date) || null,
+        slots: cal.daySlotStatus(s, date, booked, now()),
+      }));
+      return ok({ days: out });
+    },
+
+    calendarAction(body) {
+      const { action, date, time } = body || {};
+      if (!cal.isDate(date) || (time !== undefined && !cal.isTime(time))) return fail(400, { status: 'error', message: 'Bad date or time.' });
+      const settings = structuredClone(store.getSettings());
+      const s = settings.schedule;
+      const without = (list) => list.filter((x) => !(x.date === date && x.time === time));
+      switch (action) {
+        case 'blockDate': if (!s.blockedDates.includes(date)) s.blockedDates.push(date); break;
+        case 'unblockDate': s.blockedDates = s.blockedDates.filter((d) => d !== date); break;
+        case 'blockSlot':
+          if (!time) return fail(400, { status: 'error', message: 'Time required.' });
+          s.openedSlots = without(s.openedSlots);
+          if (cal.regularSlots(s, date).includes(time) && !s.blockedSlots.some((x) => x.date === date && x.time === time)) s.blockedSlots.push({ date, time });
+          break;
+        case 'openSlot':
+          if (!time) return fail(400, { status: 'error', message: 'Time required.' });
+          s.blockedSlots = without(s.blockedSlots);
+          if (!cal.regularSlots(s, date).includes(time) || s.blockedDates.includes(date)) {
+            if (!s.openedSlots.some((x) => x.date === date && x.time === time)) s.openedSlots.push({ date, time });
+          }
+          break;
+        case 'setSpecialHours': {
+          const { open, close } = body;
+          if (!cal.isTime(open) || !cal.isTime(close) || open >= close) return fail(400, { status: 'error', message: 'Special hours need open before close.' });
+          s.specialHours = (s.specialHours || []).filter((x) => x.date !== date).concat({ date, open, close }).sort((x, y) => x.date.localeCompare(y.date));
+          break;
+        }
+        case 'clearSpecialHours': s.specialHours = (s.specialHours || []).filter((x) => x.date !== date); break;
+        case 'addHoliday': if (!s.holidays.includes(date)) s.holidays.push(date); s.holidays.sort(); break;
+        case 'removeHoliday': s.holidays = s.holidays.filter((d) => d !== date); break;
+        default: return fail(400, { status: 'error', message: 'Unknown action.' });
+      }
+      store.saveSettings(settings);
+      return ok({ status: 'ok' });
+    },
+
+    leads: () => ok({ leads: [...store.listLeads()].reverse() }),
+
+    patchLead(id, body) {
+      body = body || {};
+      const allowed = ['new', 'contacted', 'booked', 'done', 'lost', 'out_of_area', 'needs_follow_up'];
+      const patch = {};
+      if (body.status !== undefined) {
+        if (!allowed.includes(body.status)) return fail(400, { status: 'error', message: 'Bad status.' });
+        patch.status = body.status;
+      }
+      if (typeof body.crewNotes === 'string') patch.crewNotes = body.crewNotes.slice(0, 2000);
+      if (body.cancelBooking === true) {
+        const lead = store.getLead(id);
+        if (lead && lead.booking) patch.booking = { ...lead.booking, status: 'cancelled' };
+      }
+      const lead = store.updateLead(id, patch);
+      if (!lead) return fail(404, { status: 'error', message: 'Not found.' });
+      return ok({ status: 'ok', lead });
+    },
+  };
+}
+
+module.exports = { createApi };
