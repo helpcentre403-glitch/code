@@ -7,7 +7,7 @@ Open items are at the top. Everything you confirmed is listed under **Done** at 
 ### Content
 - [ ] **Christmas tree purchase price**: set to an estimate of **$60+ per tree** (any size), as you asked. Estimates include it with a "+" and tell the customer you'll let them know the exact price. When you know real prices, change them per size in Admin → Rates.
 - [ ] **Long carry fee**: not priced yet. It shows as "To be confirmed".
-- [ ] **Photos**: four placeholders in `public/img/` are labeled "TODO: REAL PHOTO". Use your own photos, or free stock photos whose license allows business use (for example Unsplash or Pexels). Don't copy images from Google search results; most are copyrighted.
+- [x] **Photos and logo**: SAE logo in the home page hero; service photos added. Replace the junk removal photo with one of your own crew and trailer when you can: the current one shows another company's logo on the workers' shirts and a box truck.
 - [ ] **FAQ answers**: I drafted these because you asked me to write them. Check that they match how you actually work:
   - What don't you take? (hazardous materials; tires, paint, and heavy materials handled case by case)
   - Do I need to be home? (not for curbside, lawn, or tree drop-offs; yes for jobs inside)

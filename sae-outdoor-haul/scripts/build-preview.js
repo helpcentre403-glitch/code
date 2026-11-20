@@ -31,9 +31,10 @@ for (const f of ['index', 'prices', 'thank-you', 'privacy', 'terms', 'admin']) v
 for (const f of fs.readdirSync(path.join(root, 'views/partials'))) views[`partials/${f}`] = read(`views/partials/${f}`);
 
 // Inline images as data URIs
-const img = (f) => `data:image/svg+xml;base64,${Buffer.from(read(`public/img/${f}`)).toString('base64')}`;
+const MIME = { svg: 'image/svg+xml', webp: 'image/webp', png: 'image/png', jpg: 'image/jpeg' };
+const img = (f) => `data:${MIME[f.split('.').pop()]};base64,${fs.readFileSync(path.join(root, 'public/img', f)).toString('base64')}`;
 for (const k of Object.keys(views)) {
-  views[k] = views[k].replace(/\/assets\/img\/([\w-]+\.svg)/g, (_, f) => img(f));
+  views[k] = views[k].replace(/\/assets\/img\/([\w-]+\.(?:svg|webp|png|jpg))/g, (_, f) => img(f));
 }
 
 // ---- Page scripts, turned into re-runnable boot functions ----
