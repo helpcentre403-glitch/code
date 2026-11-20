@@ -36,11 +36,17 @@ function pricedSettings() {
   return s;
 }
 
+const FAKE_ADDRESSES = [
+  { label: '2400 Kelly Blvd, Carrollton, TX 75006', city: 'Carrollton' },
+  { label: '2400 Kelly Ln, Plano, TX 75075', city: 'Plano' },
+];
+const fakeSuggester = { provider: 'photon', suggest: async (q) => (String(q).trim().length < 4 ? [] : FAKE_ADDRESSES.filter((a) => a.label.toLowerCase().includes(String(q).toLowerCase().trim()))) };
+
 async function startServer({ settings, ai = null, sms = null, mailer = null, now = () => FIXED_NOW, adminPassword = 'test-pass' } = {}) {
   const dataDir = tmpDir();
   if (settings) fs.writeFileSync(path.join(dataDir, 'settings.json'), JSON.stringify(settings));
   const app = createApp({
-    dataDir, ai, sms, mailer, now, adminPassword,
+    dataDir, ai, sms, mailer, now, adminPassword, addressSuggester: fakeSuggester,
     distance: createDistanceService({ provider: 'stub', stubTable: STUB }),
     log: { error: () => {} },
     estimateRateLimit: 1000,

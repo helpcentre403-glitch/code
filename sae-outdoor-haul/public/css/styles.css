@@ -311,3 +311,11 @@ button, input, select, textarea { color: var(--ink); }
 .zone-group .chip span { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; border-radius: 12px; height: 100%; padding: 10px 14px; line-height: 1.25; }
 .zone-group .chip small { font-size: .85rem; }
 @media (max-width: 360px) { .zone-group { grid-template-columns: 1fr; } }
+
+/* Address suggestions */
+.addr-wrap { position: relative; }
+.addr-list { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 15; list-style: none; margin: 0; padding: 4px; background: var(--card); border: 2px solid var(--accent); border-radius: 10px; box-shadow: var(--shadow); }
+.addr-list[hidden] { display: none; }
+.addr-list li { padding: 12px 10px; border-radius: 8px; cursor: pointer; color: var(--ink); min-height: 44px; }
+.addr-list li[aria-selected=true], .addr-list li:hover { background: var(--accent-soft); }
+.addr-list li.addr-credit { min-height: 0; padding: 4px 10px; font-size: .75rem; color: var(--ink-2); cursor: default; background: none; }

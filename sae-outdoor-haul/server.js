@@ -11,6 +11,7 @@ const { createDistanceService } = require('./lib/distance');
 const { createAi } = require('./lib/ai');
 const { createSms } = require('./lib/sms');
 const { createMailer } = require('./lib/mailer');
+const { createAddressSuggester } = require('./lib/address');
 const { defaultSettings } = require('./lib/defaults');
 
 const VIEWS = path.join(__dirname, 'views');
@@ -100,6 +101,13 @@ function createApp(opts = {}) {
   const noStore = (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); };
   app.get('/api/config', (req, res) => send(res, api.config()));
   app.get('/api/availability', noStore, (req, res) => send(res, api.availability()));
+  const addresses = opts.addressSuggester || createAddressSuggester({ googleKey: process.env.GOOGLE_MAPS_API_KEY, log });
+  app.get('/api/address-suggest', rateLimiter({ windowMs: 10 * 60 * 1000, max: 300 }), async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'no-store');
+      res.json({ provider: addresses.provider, suggestions: await addresses.suggest(req.query.q) });
+    } catch (e) { next(e); }
+  });
   app.post('/api/estimate', rateLimiter({ windowMs: 15 * 60 * 1000, max: opts.estimateRateLimit || 40 }), async (req, res, next) => {
     try { send(res, await api.estimate(req.body)); } catch (e) { next(e); }
   });

@@ -52,7 +52,10 @@
       + '<p class="field-error" data-error="date"></p></fieldset>'
       + '<fieldset class="step"><legend><span class="num">' + (n + 1) + '</span> Address</legend>'
       + '<label class="label" for="' + id + '-address">Service address (street, city, ZIP)</label>'
-      + '<input id="' + id + '-address" name="address" autocomplete="street-address" maxlength="300" placeholder="123 Main St, Carrollton, TX 75006">'
+      + '<div class="addr-wrap">'
+      + '<input id="' + id + '-address" name="address" autocomplete="street-address" maxlength="300" placeholder="Start typing your street address" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="' + id + '-addr-list">'
+      + '<ul class="addr-list" id="' + id + '-addr-list" role="listbox" hidden></ul>'
+      + '</div>'
       + '<p class="field-error" data-error="address"></p>'
       + '<p class="label">Is this address inside or outside ' + config.freeCity + '?</p>'
       + '<div class="chip-group zone-group" role="radiogroup" aria-label="Inside or outside ' + config.freeCity + '">'
@@ -74,6 +77,60 @@
       + '<button type="submit" class="btn btn-accent btn-big btn-block" data-submit>Generate Estimate</button>'
       + '<p class="hint center" data-submit-hint></p>';
     renderCalendar(form);
+    wireAddress(form);
+  }
+
+  // Address suggestions while typing. Picking one fills a clean address and the Inside/Outside choice.
+  var squeeze = function (x) { return String(x || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/([a-z])\1+/g, '$1').trim(); };
+  function wireAddress(form) {
+    var input = form.querySelector('input[name="address"]');
+    var list = form.querySelector('.addr-list');
+    var timer = null; var lastQ = ''; var items = []; var active = -1;
+    function close() { list.hidden = true; list.innerHTML = ''; input.setAttribute('aria-expanded', 'false'); active = -1; }
+    function choose(s) {
+      input.value = s.label;
+      close();
+      if (s.city && config.freeCity) {
+        var inside = squeeze(s.city) === squeeze(config.freeCity);
+        var radio = form.querySelector('input[name="cityZone"][value="' + (inside ? 'inside' : 'outside') + '"]');
+        if (radio) radio.checked = true;
+      }
+    }
+    function highlight(i) {
+      active = i;
+      list.querySelectorAll('li').forEach(function (li, k) { li.setAttribute('aria-selected', String(k === i)); });
+    }
+    function show(provider, suggestions) {
+      items = suggestions; list.innerHTML = ''; active = -1;
+      if (!suggestions.length) { close(); return; }
+      suggestions.forEach(function (s, i) {
+        var li = el('li', { role: 'option', id: input.id + '-opt-' + i, 'aria-selected': 'false', text: s.label });
+        li.addEventListener('mousedown', function (e) { e.preventDefault(); choose(s); });
+        list.appendChild(li);
+      });
+      list.appendChild(el('li', { class: 'addr-credit', 'aria-hidden': 'true', text: provider === 'google' ? 'Powered by Google' : 'Map data \u00a9 OpenStreetMap contributors' }));
+      list.hidden = false; input.setAttribute('aria-expanded', 'true');
+    }
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      var q = input.value.trim();
+      if (q.length < 4) { close(); return; }
+      timer = setTimeout(function () {
+        lastQ = q;
+        api('/api/address-suggest?q=' + encodeURIComponent(q)).then(function (r) {
+          if (q !== lastQ || input.value.trim() !== q) return; // a newer search is on its way
+          show(r.provider, r.suggestions || []);
+        }).catch(close);
+      }, 300);
+    });
+    input.addEventListener('keydown', function (e) {
+      if (list.hidden || !items.length) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); highlight((active + 1) % items.length); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); highlight((active - 1 + items.length) % items.length); }
+      else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); choose(items[active]); }
+      else if (e.key === 'Escape') close();
+    });
+    input.addEventListener('blur', function () { setTimeout(close, 150); });
   }
 
   // Sideways-scrolling date row; the first open date is picked automatically so its times show right away.

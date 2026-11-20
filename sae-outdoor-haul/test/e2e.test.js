@@ -240,3 +240,32 @@ test('screenshots for review', async () => {
   await page.screenshot({ path: `${out}/prices.png`, fullPage: true });
   await ctx.close();
 });
+
+test('address box: suggestions appear while typing; tapping one fills the address and Inside/Outside', async () => {
+  const { ctx, page, errors } = await phone();
+  await page.goto(`${srv.base}/prices#landscaping`);
+  await page.waitForSelector('body[data-ready="true"]');
+  const sec = page.locator('#landscaping');
+  const input = sec.locator('input[name="address"]');
+  await input.pressSequentially('2400 kelly', { delay: 30 });
+  const list = sec.locator('.addr-list');
+  await list.locator('li[role="option"]').first().waitFor();
+  assert.deepEqual(await list.locator('li[role="option"]').allInnerTexts(), ['2400 Kelly Blvd, Carrollton, TX 75006', '2400 Kelly Ln, Plano, TX 75075']);
+  assert.match(await list.locator('.addr-credit').innerText(), /OpenStreetMap/);
+  // Tap the Plano one: address filled, "Outside of Carrollton" picked
+  await list.locator('li[role="option"]', { hasText: 'Plano' }).click();
+  assert.equal(await input.inputValue(), '2400 Kelly Ln, Plano, TX 75075');
+  assert.equal(await list.isHidden(), true);
+  assert.equal(await sec.locator('input[name="cityZone"][value="outside"]').isChecked(), true);
+  // Keyboard: arrow down + Enter picks the Carrollton one, switching to Inside
+  await input.fill('');
+  await input.pressSequentially('2400 kelly b', { delay: 30 });
+  await list.locator('li[role="option"]').first().waitFor();
+  await input.press('ArrowDown');
+  await input.press('Enter');
+  assert.equal(await input.inputValue(), '2400 Kelly Blvd, Carrollton, TX 75006');
+  assert.equal(await sec.locator('input[name="cityZone"][value="inside"]').isChecked(), true);
+  await noHorizontalScroll(page);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

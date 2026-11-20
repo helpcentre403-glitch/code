@@ -39,7 +39,7 @@ Open http://localhost:3000. The admin panel is at http://localhost:3000/admin (u
 | `ADMIN_PASSWORD` | Required for /admin |
 | `PORT` | Default 3000 |
 | `DATA_DIR` | Where `settings.json` and `leads.json` live (default `./data`). Use persistent storage. |
-| `GOOGLE_MAPS_API_KEY` | Driving distance via Google Distance Matrix (recommended) |
+| `GOOGLE_MAPS_API_KEY` | Driving distance (Distance Matrix API) and address suggestions while typing (Places API (New)). Without it: free OpenStreetMap services |
 | `DISTANCE_PROVIDER` | `google`, `osrm` (free OpenStreetMap services, for testing), or `stub` |
 | `DISTANCE_STUB` | JSON table for `stub`, e.g. `{"plano":{"miles":14,"city":"Plano"}}` |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Text service. Needed for the owner's booking texts and for automatic "Text Me This Quote" |

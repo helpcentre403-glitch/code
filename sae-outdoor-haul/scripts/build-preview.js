@@ -147,6 +147,7 @@ ${safe(modSrc)}
     try {
       if (p === '/api/config') r = A.config();
       else if (p === '/api/availability') r = A.availability();
+      else if (p === '/api/address-suggest') r = { status: 200, json: { provider: 'none', suggestions: [] } };
       else if (p === '/api/estimate') r = A.estimate(body);
       else if ((m = p.match(/^\\/api\\/leads\\/([^/]+)\\/text$/))) r = A.textQuote(decodeURIComponent(m[1]));
       else if ((m = p.match(/^\\/api\\/leads\\/([^/]+)\\/book$/))) r = A.book(decodeURIComponent(m[1]));

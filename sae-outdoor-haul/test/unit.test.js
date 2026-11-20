@@ -213,3 +213,45 @@ test('mailer: Gmail settings, SMTP settings, or off; subject cannot inject heade
   assert.equal(sent[0].from, 'owner@gmail.com');
   assert.equal(sent[0].subject, 'Hi Bcc: evil@example.com');
 });
+
+test('address suggestions: Photon (free) formatting, Google formatting, failures are quiet', async () => {
+  const { createAddressSuggester } = require('../lib/address');
+  const calls = [];
+  const photonFetch = async (url) => {
+    calls.push(String(url));
+    return { ok: true, json: async () => ({ features: [
+      { properties: { housenumber: '2400', street: 'Kelly Boulevard', city: 'Carrollton', state: 'Texas', postcode: '75006' } },
+      { properties: { housenumber: '2400', street: 'Kelly Boulevard', city: 'Carrollton', state: 'Texas', postcode: '75006' } },
+      { properties: { name: 'Belt Line Road', city: 'Addison', state: 'Texas', postcode: '75001' } },
+    ] }) };
+  };
+  const p = createAddressSuggester({ fetchImpl: photonFetch, log: { error() {} } });
+  assert.equal(p.provider, 'photon');
+  assert.deepEqual(await p.suggest('abc'), [], 'too short: no lookup');
+  const out = await p.suggest('2400 kelly');
+  assert.deepEqual(out, [
+    { label: '2400 Kelly Boulevard, Carrollton, TX 75006', city: 'Carrollton' },
+    { label: 'Belt Line Road, Addison, TX 75001', city: 'Addison' },
+  ]);
+  assert.match(calls[0], /photon\.komoot\.io\/api\/\?q=2400\+kelly/);
+  assert.match(calls[0], /countrycode=US/);
+  assert.match(calls[0], /bbox=-97\.4%2C32\.6%2C-96\.38%2C33\.31/);
+  await p.suggest('2400 KELLY'); // cached (same text, different case)
+  assert.equal(calls.length, 1);
+
+  let gBody = null; let gHeaders = null;
+  const g = createAddressSuggester({ googleKey: 'k', fetchImpl: async (url, init) => {
+    gBody = JSON.parse(init.body); gHeaders = init.headers;
+    return { ok: true, json: async () => ({ suggestions: [{ placePrediction: {
+      text: { text: '2400 Kelly Blvd, Carrollton, TX, USA' },
+      structuredFormat: { mainText: { text: '2400 Kelly Blvd' }, secondaryText: { text: 'Carrollton, TX, USA' } },
+    } }] }) };
+  } });
+  assert.deepEqual(await g.suggest('2400 kelly'), [{ label: '2400 Kelly Blvd, Carrollton, TX', city: 'Carrollton' }]);
+  assert.equal(gHeaders['X-Goog-Api-Key'], 'k');
+  assert.deepEqual(gBody.includedRegionCodes, ['us']);
+  assert.equal(gBody.locationBias.circle.radius, 50000);
+
+  const broken = createAddressSuggester({ fetchImpl: async () => { throw new Error('down'); }, log: { error() {} } });
+  assert.deepEqual(await broken.suggest('2400 kelly'), []);
+});

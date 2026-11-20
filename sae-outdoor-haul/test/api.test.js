@@ -374,3 +374,13 @@ test('admin Send test email reports success and the real reason for failures', a
     assert.deepEqual(sent, [{ to: 'Helpcentre403@gmail.com', sub: 'Test email from your website' }]);
   } finally { await good.close(); }
 });
+
+test('address suggestion endpoint', async () => {
+  const s = await startServer();
+  try {
+    const r = (await s.get('/api/address-suggest?q=2400%20kelly')).json;
+    assert.equal(r.provider, 'photon');
+    assert.equal(r.suggestions.length, 2);
+    assert.deepEqual((await s.get('/api/address-suggest?q=ab')).json.suggestions, []);
+  } finally { await s.close(); }
+});
