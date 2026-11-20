@@ -490,3 +490,22 @@ test('Privacy Policy and Terms of Service contain the wording Twilio asks for', 
     for (const page of [privacy, terms]) assert.ok(!/\[TODO/.test(page), 'no TODO placeholders on legal pages');
   } finally { await s.close(); }
 });
+
+test('admin Send test text: not set up, success, and Twilio errors explained', async () => {
+  const none = await startServer();
+  try {
+    assert.match((await none.admin('POST', '/api/admin/test-text', {})).json.message, /TWILIO_ACCOUNT_SID/);
+  } finally { await none.close(); }
+  const sent = [];
+  const good = await startServer({ sms: { send: async (to, body) => { sent.push({ to, body }); return true; } } });
+  try {
+    const r = (await good.admin('POST', '/api/admin/test-text', {})).json;
+    assert.equal(r.status, 'ok');
+    assert.equal(sent[0].to, '4697561984');
+    assert.match(sent[0].body, /Reply STOP to opt out/);
+  } finally { await good.close(); }
+  const bad = await startServer({ sms: { send: async () => { throw new Error('Twilio HTTP 401 (Twilio error 20003: Authenticate)'); } } });
+  try {
+    assert.match((await bad.admin('POST', '/api/admin/test-text', {})).json.message, /Account SID or Auth Token is wrong/);
+  } finally { await bad.close(); }
+});

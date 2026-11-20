@@ -320,3 +320,18 @@ test('free map lookup retries simpler versions of an address and caches results'
   await d.measure('Carrollton, TX', '1 Other St, 75006');
   assert.ok(!asked.slice(before).includes('Carrollton, TX'), 'base address looked up only once');
 });
+
+test('Twilio sender: Messaging Service or From number, phone formats, readable errors', async () => {
+  const { createSms } = require('../lib/sms');
+  assert.equal(createSms({ accountSid: 'AC1', authToken: 't' }), null, 'needs a number or messaging service');
+  const calls = [];
+  const fetchImpl = async (url, init) => { calls.push({ url, params: Object.fromEntries(init.body) , auth: init.headers.Authorization }); return { ok: true, json: async () => ({}) }; };
+  await createSms({ accountSid: 'AC1', authToken: 't', messagingServiceSid: 'MG9', fetchImpl }).send('2145550100', 'hi');
+  assert.deepEqual(calls[0].params, { To: '+12145550100', Body: 'hi', MessagingServiceSid: 'MG9' });
+  assert.match(calls[0].url, /Accounts\/AC1\/Messages\.json$/);
+  assert.equal(calls[0].auth, `Basic ${Buffer.from('AC1:t').toString('base64')}`);
+  await createSms({ accountSid: 'AC1', authToken: 't', from: '(469) 555-0199', fetchImpl }).send('12145550100', 'hi');
+  assert.deepEqual(calls[1].params, { To: '+12145550100', Body: 'hi', From: '+14695550199' });
+  const bad = createSms({ accountSid: 'AC1', authToken: 't', from: '+14695550199', fetchImpl: async () => ({ ok: false, status: 400, json: async () => ({ code: 21606, message: 'The From phone number is not a valid, SMS-capable inbound phone number' }) }) });
+  await assert.rejects(bad.send('2145550100', 'x'), /Twilio HTTP 400 \(Twilio error 21606/);
+});

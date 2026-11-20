@@ -44,6 +44,7 @@ function createApp(opts = {}) {
   const ai = opts.ai !== undefined ? opts.ai : createAi({ apiKey: process.env.ANTHROPIC_API_KEY });
   const sms = opts.sms !== undefined ? opts.sms : createSms({
     accountSid: process.env.TWILIO_ACCOUNT_SID, authToken: process.env.TWILIO_AUTH_TOKEN, from: process.env.TWILIO_FROM,
+    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
   });
   const adminPassword = opts.adminPassword !== undefined ? opts.adminPassword : process.env.ADMIN_PASSWORD;
   const now = opts.now || (() => new Date());
@@ -127,6 +128,9 @@ function createApp(opts = {}) {
   app.get('/api/admin/calendar', (req, res) => send(res, api.calendar(req.query)));
   app.post('/api/admin/calendar', (req, res) => send(res, api.calendarAction(req.body)));
   app.get('/api/admin/leads', (req, res) => send(res, api.leads()));
+  app.post('/api/admin/test-text', async (req, res, next) => {
+    try { send(res, await api.testText()); } catch (e) { next(e); }
+  });
   app.post('/api/admin/test-email', async (req, res, next) => {
     try { send(res, await api.testEmail()); } catch (e) { next(e); }
   });

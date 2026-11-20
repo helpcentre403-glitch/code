@@ -277,6 +277,23 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
     // ---------- Admin ----------
     getSettings: () => ok(store.getSettings()),
 
+    /** Admin "Send test text": texts the business phone and reports Twilio's exact error. */
+    async testText() {
+      const to = notifyPhone || store.getSettings().business.phone;
+      if (!sms) return ok({ status: 'error', message: 'Texting is not set up on the server. On Render, add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_MESSAGING_SERVICE_SID (or TWILIO_FROM) under Environment, then save.' });
+      try {
+        await sms.send(to, `${store.getSettings().business.name}: test text from your website. Booking texts are working. Reply STOP to opt out.`);
+        return ok({ status: 'ok', message: `Twilio accepted the text to ${to}. If it doesn't arrive within a few minutes, check the message log in Twilio for error 30034 (A2P registration not approved yet).` });
+      } catch (e) {
+        const raw = String(e && e.message || e);
+        let hint = '';
+        if (/20003|401/.test(raw)) hint = ' The Account SID or Auth Token is wrong.';
+        else if (/21606|21659|21212/.test(raw)) hint = ' TWILIO_FROM is not a Twilio number on this account. Use your Twilio number or the Messaging Service SID.';
+        else if (/21608/.test(raw)) hint = ' Trial accounts can only text verified numbers.';
+        return ok({ status: 'error', message: `Text failed: ${raw.slice(0, 300)}.${hint}` });
+      }
+    },
+
     /** Admin "Send test email": reports exactly why email is not working. */
     async testEmail() {
       const to = notifyEmail || store.getSettings().business.email;
