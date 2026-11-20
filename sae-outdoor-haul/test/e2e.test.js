@@ -97,8 +97,9 @@ test('junk removal: full flow -> estimate breakdown -> Book This Date -> thank y
   const text = await est.innerText();
   for (const s of ['Base price', 'Extras', 'Distance fee', 'This is an estimate. Our crew confirms the final price before work starts.']) assert.ok(text.includes(s), s);
   assert.ok(!text.includes('Same-day fee'));
-  await est.getByRole('button', { name: 'Text Me This Quote' }).waitFor();
-  await est.getByRole('button', { name: 'Book This Date' }).click();
+  assert.equal(await est.locator('button').count(), 1, 'one button only');
+  assert.match(await est.locator('.book-btn').innerText(), /Book This Date\s+We'll text you to confirm/);
+  await est.locator('.book-btn').click();
   await page.waitForURL(/thank-you/);
   assert.match(await page.locator('h1').innerText(), /Got it\. We.ll text you to confirm\./);
   assert.equal(await page.locator('main a[href="tel:+14697561984"]').count(), 1);
@@ -114,7 +115,7 @@ test('junk removal: full flow -> estimate breakdown -> Book This Date -> thank y
   await ctx.close();
 });
 
-test('landscaping: area -> size -> Carrollton is free -> Text Me This Quote', async () => {
+test('landscaping: area -> size -> Carrollton is free -> Book This Date', async () => {
   const { ctx, page, errors } = await phone();
   await page.goto(`${srv.base}/prices#landscaping`);
   await page.waitForSelector('body[data-ready="true"]');
@@ -130,8 +131,8 @@ test('landscaping: area -> size -> Carrollton is free -> Text Me This Quote', as
   await est.waitFor();
   assert.equal(await est.locator('.total').innerText(), '$55');
   assert.ok((await est.innerText()).includes('Carrollton address: no distance fee'));
-  await est.getByRole('button', { name: 'Text Me This Quote' }).click();
-  await page.waitForURL(/thank-you\?type=quote/);
+  await est.locator('.book-btn').click();
+  await page.waitForURL(/thank-you\?type=booked/);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

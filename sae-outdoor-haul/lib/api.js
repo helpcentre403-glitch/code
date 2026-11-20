@@ -69,6 +69,41 @@ function leadEmail(lead, settings, heading) {
   return lines.join('\n');
 }
 
+function money0(p) { return pricing.formatPrice(p); }
+
+/** Short text for the customer (fits in about two text messages). */
+function customerText(lead, settings) {
+  const b = lead.booking;
+  const e = lead.estimate;
+  const phone = settings.business.phone ? `(${settings.business.phone.slice(0, 3)}) ${settings.business.phone.slice(3, 6)}-${settings.business.phone.slice(6)}` : '';
+  const base = e.sections.find((s) => s.title === 'Base price');
+  const dist = e.sections.find((s) => s.title === 'Distance fee');
+  const parts = [
+    `${settings.business.name}: you're booked!`,
+    `${SERVICE_NAMES[lead.service] || lead.service}, ${cal.formatDate(b.date)} at ${cal.formatTime(b.time)}`,
+    `${(lead.answers && lead.answers.address) || ''}`,
+    `Estimate: ${money0(e.total)}${e.hasUnpriced ? ' + items to confirm' : ''}`
+      + (base ? ` (job ${money0(base.subtotal)}` : '')
+      + (dist ? `, distance ${dist.lines.every((l) => l.free) ? 'no fee' : money0(dist.subtotal)})` : base ? ')' : ''),
+    'Final price confirmed before work starts.',
+    phone ? `Questions? Call/text ${phone}` : '',
+  ];
+  return parts.filter(Boolean).join('\n');
+}
+
+/** Email receipt for the customer (if they gave an email). */
+function customerEmail(lead, settings) {
+  const e = lead.estimate;
+  const lines = [customerText(lead, settings), '', 'Estimate details:'];
+  for (const s of e.sections) {
+    if (!s.lines.length) continue;
+    lines.push(`  ${s.title}: ${s.lines.every((l) => l.free) ? 'No fee' : money0(s.subtotal)}`);
+    for (const l of s.lines) if (l.status !== 'info') lines.push(`    - ${l.label}: ${l.free ? 'No fee' : l.status === 'ok' ? money0(l.price) : 'to be confirmed'}`);
+  }
+  lines.push(`  Estimated total: ${money0(e.total)}`, '', 'This is an estimate. Our crew confirms the final price before work starts.');
+  return lines.join('\n');
+}
+
 function createApi({ store, distance, ai = null, sms = null, mailer = null, notifyEmail = null, textEmail = null, now = () => new Date(), log = console, defaults = null, notifyPhone = null }) {
   // Email the owner. Never blocks or breaks the customer's request if email fails.
   async function emailOwner(subject, body) {
@@ -86,7 +121,7 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
   );
 
   return {
-    config: () => ok(publicConfig(store.getSettings())),
+    config: () => ok({ ...publicConfig(store.getSettings()), autoText: Boolean(sms) }),
 
     availability: () => ok({ days: cal.availability(store.getSettings().schedule, bookedKeys(), now()) }),
 
@@ -197,9 +232,26 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
         } catch (e) { log.error('Owner booking text failed:', e.message); }
       }
       const booked = store.getLead(lead.id);
+      const s2 = store.getSettings();
+      // Confirm to the customer right away: text (needs a text service), and email if they gave one.
+      let customerTexted = false;
+      let customerEmailed = false;
+      if (sms && booked.contact.phone) {
+        try { customerTexted = await sms.send(booked.contact.phone, customerText(booked, s2).slice(0, 600)); } catch (e) { log.error('Customer confirmation text failed:', e.message); }
+      }
+      if (mailer && booked.contact.email) {
+        try {
+          customerEmailed = await mailer.send(booked.contact.email, `Your booking with ${s2.business.name}: ${cal.formatDate(booked.booking.date)} at ${cal.formatTime(booked.booking.time)}`, customerEmail(booked, s2));
+        } catch (e) { log.error('Customer confirmation email failed:', e.message); }
+      }
+      const p = booked.contact.phone || '';
+      const customerPhone = p.length === 10 ? `(${p.slice(0, 3)}) ${p.slice(3, 6)}-${p.slice(6)}` : p;
+      const status = customerTexted
+        ? 'The customer was texted their confirmation and estimate.'
+        : `>>> TEXT THIS CUSTOMER: they were NOT texted automatically (no text service is set up). Text ${customerPhone} to confirm. <<<${customerEmailed ? ' (They were emailed a copy.)' : ''}`;
       const ownerEmailed = await emailOwner(
         `New booking: ${SERVICE_NAMES[lead.service] || lead.service}, ${cal.formatDate(lead.booking.date)} at ${cal.formatTime(lead.booking.time)}, ${lead.contact.name}`,
-        leadEmail(booked, store.getSettings(), 'A customer just booked on your website.'),
+        leadEmail(booked, s2, `A customer just booked on your website.\n${status}`),
       );
       // Optional free "text" alert through the carrier's email-to-text address (e.g. 4697561984@tmomail.net).
       // Short, because carriers cut long messages. Only works if the carrier still runs that service.
@@ -212,7 +264,7 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
           ownerTextEmailed = await mailer.send(textEmail, 'New booking', short.slice(0, 150));
         } catch (e) { log.error('Email-to-text alert failed:', e.message); }
       }
-      store.updateLead(lead.id, { ownerTexted, ownerEmailed, ownerTextEmailed });
+      store.updateLead(lead.id, { ownerTexted, ownerEmailed, ownerTextEmailed, customerTexted, customerEmailed });
       return ok({ status: 'ok' });
     },
 
@@ -318,4 +370,4 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
   };
 }
 
-module.exports = { createApi, bookingText, describeJob, leadEmail };
+module.exports = { createApi, bookingText, describeJob, leadEmail, customerText, customerEmail };

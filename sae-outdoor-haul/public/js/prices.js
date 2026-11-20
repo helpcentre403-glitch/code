@@ -441,16 +441,12 @@
     box.appendChild(table);
     e.notes.forEach(function (n) { box.appendChild(el('p', { class: 'hint', text: n })); });
     box.appendChild(el('p', { class: 'disclaimer', text: r.disclaimer }));
-    var textBtn = el('button', { type: 'button', class: 'btn btn-light', text: 'Text Me This Quote' });
-    var bookBtn = el('button', { type: 'button', class: 'btn btn-accent', text: 'Book This Date' });
+    // One button: book, then the customer gets their confirmation (text when a text service is set up).
+    var bookBtn = el('button', { type: 'button', class: 'btn btn-accent btn-big btn-block book-btn' }, [
+      el('span', { text: 'Book This Date' }),
+      el('small', { text: config.autoText ? "We'll text you automatically" : "We'll text you to confirm" }),
+    ]);
     var msg = el('p', { class: 'hint', 'aria-live': 'polite' });
-    textBtn.addEventListener('click', function () {
-      textBtn.disabled = true;
-      api('/api/leads/' + encodeURIComponent(r.leadId) + '/text', {}).then(function (x) {
-        if (x.status === 'ok') window.location.href = '/thank-you?type=quote';
-        else { textBtn.disabled = false; msg.textContent = x.message || 'Could not send. Please call or text us.'; }
-      });
-    });
     bookBtn.addEventListener('click', function () {
       bookBtn.disabled = true;
       api('/api/leads/' + encodeURIComponent(r.leadId) + '/book', {}).then(function (x) {
@@ -459,7 +455,7 @@
         else { bookBtn.disabled = false; msg.textContent = x.message; refreshAvailability(); }
       });
     });
-    box.appendChild(el('div', { class: 'btn-row' }, [textBtn, bookBtn]));
+    box.appendChild(el('div', { class: 'btn-row' }, [bookBtn]));
     box.appendChild(msg);
     result.innerHTML = ''; result.appendChild(box);
     result.scrollIntoView({ behavior: 'smooth', block: 'start' });

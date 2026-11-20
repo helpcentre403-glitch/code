@@ -84,9 +84,11 @@ test('booking texts the owner who booked, when, and what the job is', async () =
     const r = await s.post('/api/estimate', { service: 'junk', answers: junkAnswers({ items: [{ key: 'couch', qty: 2 }], special: 'gate code 1234' }), contact });
     assert.equal(sent.length, 0, 'no owner text for a quote alone');
     assert.equal((await s.post(`/api/leads/${r.json.leadId}/book`, {})).json.status, 'ok');
-    assert.equal(sent.length, 1);
-    assert.equal(sent[0].to, '4697561984');
-    const body = sent[0].body;
+    assert.equal(sent.length, 2, 'one text to the owner, one to the customer');
+    const ownerText = sent.find((x) => x.to === '4697561984');
+    assert.ok(ownerText);
+    assert.ok(sent.some((x) => x.to === '2145550100'), 'customer texted');
+    const body = ownerText.body;
     for (const part of ['NEW BOOKING: Junk removal', 'Tue, Dec 8 at 6:00 PM', 'Test Customer, (214) 555-0100', 'Address: 100 Main St, Plano, TX', 'old couch, 6 boxes, treadmill', 'Couch x2', 'gate code 1234', 'Estimate: $210 to $310']) {
       assert.ok(body.includes(part), `missing "${part}" in:\n${body}`);
     }
@@ -105,9 +107,9 @@ test('Book This Date emails the owner right away: who, contact info, address, wh
     await s.post(`/api/leads/${r.json.leadId}/text`, {});
     assert.equal(mails.length, 0, 'no email for Text Me This Quote');
     await s.post(`/api/leads/${r.json.leadId}/book`, {});
-    assert.equal(mails.length, 1, 'one email the moment they book');
-    const m = mails[0];
-    assert.equal(m.to, 'Helpcentre403@gmail.com');
+    assert.equal(mails.length, 2, 'owner email + customer receipt the moment they book');
+    const m = mails.find((x) => x.to === 'Helpcentre403@gmail.com');
+    assert.ok(mails.some((x) => x.to === 'pat@example.com'), 'customer emailed a receipt');
     assert.equal(m.subject, 'New booking: Landscaping, Sat, Dec 12 at 10:00 AM, Test Customer');
     for (const part of ['A customer just booked', 'Test Customer, (214) 555-0100', 'Address: 5 Elm St, Carrollton, TX', 'Large front and back', 'Customer email: pat@example.com', 'Total: $75', '"cityZone": "inside"']) {
       assert.ok(m.text.includes(part), `missing "${part}" in:\n${m.text}`);
@@ -411,4 +413,42 @@ test('map service down: estimate still works from the Inside/Outside choice and 
     const leads = await (await fetch(`${base}/api/admin/leads`, { headers: { Authorization: `Basic ${Buffer.from('admin:p').toString('base64')}` } })).json();
     assert.equal(leads.leads[0].addressUnverified, true);
   } finally { await new Promise((r) => server.close(r)); }
+});
+
+test('Book This Date: customer gets a text + email receipt, owner email says whether the customer was texted', async () => {
+  const texts = []; const mails = [];
+  const sms = { send: async (to, body) => { texts.push({ to, body }); return true; } };
+  const mailer = { send: async (to, subject, text) => { mails.push({ to, subject, text }); return true; } };
+  const s = await startServer({ settings: pricedSettings(), sms, mailer });
+  try {
+    assert.equal((await s.get('/api/config')).json.autoText, true);
+    const r = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-12', time: '10:00', address: '5 Elm St, Carrollton, TX', cityZone: 'inside' }, contact: { ...contact, email: 'pat@example.com' } });
+    await s.post(`/api/leads/${r.json.leadId}/book`, {});
+    const cust = texts.find((t) => t.to === '2145550100');
+    assert.ok(cust, 'customer texted');
+    for (const part of ["you're booked", 'Landscaping, Sat, Dec 12 at 10:00 AM', '5 Elm St, Carrollton, TX', 'Estimate: $30', 'distance no fee', 'Call/text (469) 756-1984']) {
+      assert.ok(cust.body.includes(part), `missing "${part}" in:\n${cust.body}`);
+    }
+    const custMail = mails.find((m) => m.to === 'pat@example.com');
+    assert.match(custMail.subject, /Your booking with SAE Outdoor and Haul: Sat, Dec 12 at 10:00 AM/);
+    assert.match(custMail.text, /Estimated total: \$30/);
+    const owner = mails.find((m) => m.to === 'Helpcentre403@gmail.com');
+    assert.match(owner.text, /The customer was texted their confirmation/);
+    const lead = (await s.admin('GET', '/api/admin/leads')).json.leads[0];
+    assert.equal(lead.customerTexted, true);
+    assert.equal(lead.customerEmailed, true);
+  } finally { await s.close(); }
+});
+
+test('Book This Date without a text service: owner email says to text the customer', async () => {
+  const mails = [];
+  const mailer = { send: async (to, subject, text) => { mails.push({ to, subject, text }); return true; } };
+  const s = await startServer({ settings: pricedSettings(), mailer });
+  try {
+    assert.equal((await s.get('/api/config')).json.autoText, false);
+    const r = await s.post('/api/estimate', { service: 'junk', answers: { whatToGo: 'old couch', load: 'half', locations: ['ground'], items: [], date: '2026-12-08', time: '18:00', address: '100 Main St, Plano, TX', cityZone: 'outside' }, contact });
+    await s.post(`/api/leads/${r.json.leadId}/book`, {});
+    assert.equal(mails.length, 1, 'no customer email (none given), one owner email');
+    assert.match(mails[0].text, />>> TEXT THIS CUSTOMER: they were NOT texted automatically .* Text \(214\) 555-0100 to confirm/);
+  } finally { await s.close(); }
 });

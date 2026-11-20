@@ -319,3 +319,7 @@ button, input, select, textarea { color: var(--ink); }
 .addr-list li { padding: 12px 10px; border-radius: 8px; cursor: pointer; color: var(--ink); min-height: 44px; }
 .addr-list li[aria-selected=true], .addr-list li:hover { background: var(--accent-soft); }
 .addr-list li.addr-credit { min-height: 0; padding: 4px 10px; font-size: .75rem; color: var(--ink-2); cursor: default; background: none; }
+
+/* Single Book This Date button with a second line */
+.book-btn { flex-direction: column; gap: 0; min-height: 64px; line-height: 1.2; }
+.book-btn small { font-weight: 700; font-size: .85rem; opacity: .9; }
