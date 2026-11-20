@@ -33,6 +33,7 @@ function rateLimiter({ windowMs, max }) {
 }
 
 function createApp(opts = {}) {
+  const log = opts.log || console;
   const store = opts.store || createStore(opts.dataDir || path.join(__dirname, 'data'));
   const distance = opts.distance || createDistanceService({
     provider: process.env.DISTANCE_PROVIDER || undefined,
@@ -46,7 +47,6 @@ function createApp(opts = {}) {
   });
   const adminPassword = opts.adminPassword !== undefined ? opts.adminPassword : process.env.ADMIN_PASSWORD;
   const now = opts.now || (() => new Date());
-  const log = opts.log || console;
 
   const app = express();
   app.disable('x-powered-by');

@@ -281,3 +281,18 @@ test('Google key rejected: distance and address suggestions fall back to free Op
   assert.equal((await a.lookup('1 main st')).provider, 'photon', 'credit line names whose data was used');
   assert.ok(seen.some((x) => x.includes('photon')));
 });
+
+test('server starts the way Render starts it (real services, Google key set, nothing faked)', () => {
+  const { createApp } = require('../server');
+  const { tmpDir } = require('./helpers');
+  const saved = { ...process.env };
+  try {
+    process.env.GOOGLE_MAPS_API_KEY = 'some-key';
+    process.env.GMAIL_USER = 'owner@gmail.com';
+    process.env.GMAIL_APP_PASSWORD = 'xxxx';
+    const app = createApp({ dataDir: tmpDir(), adminPassword: 'x' });
+    assert.equal(typeof app.listen, 'function');
+  } finally {
+    process.env = saved;
+  }
+});
