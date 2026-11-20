@@ -42,6 +42,7 @@ function defaultSettings() {
       textNumber: '4697561984', // owner confirmed: same number takes texts
       email: 'Helpcentre403@gmail.com', // provided by owner
       baseAddress: 'Carrollton, TX', // owner: "centre of Carrollton"
+      metaPixelId: null, // Meta Pixel (dataset) ID from Events Manager; blank = pixel off
       // Addresses whose geocoded city is in this list get a $0 distance fee.
       freeCities: ['Carrollton'],
       serviceAreaCities: [

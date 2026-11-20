@@ -226,6 +226,7 @@
     field('Phone (10 digits)', function () { return b.phone; }, function (v) { b.phone = v.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, ''); });
     field('Text line (10 digits)', function () { return b.textNumber; }, function (v) { b.textNumber = v.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, ''); });
     field('Email (blank = TODO)', function () { return b.email || ''; }, function (v) { b.email = v.trim() || null; });
+    field('Meta Pixel ID (numbers only; blank = pixel off)', function () { return b.metaPixelId || ''; }, function (v) { b.metaPixelId = v.replace(/\D/g, '') || null; });
     field('Base address (distances are measured from here)', function () { return b.baseAddress; }, function (v) { b.baseAddress = v.trim(); });
     field('Free-distance cities (comma separated)', function () { return b.freeCities.join(', '); }, function (v) { b.freeCities = v.split(',').map(function (x) { return x.trim(); }).filter(Boolean); });
     field('Service-area cities (comma separated)', function () { return b.serviceAreaCities.join(', '); }, function (v) { b.serviceAreaCities = v.split(',').map(function (x) { return x.trim(); }).filter(Boolean); });

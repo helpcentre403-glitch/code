@@ -22,6 +22,8 @@ const out = process.argv[2] || path.join(root, 'preview', 'sae-preview.html');
 // ---- Browser-safe modules (CommonJS, bundled with a tiny loader) ----
 const MODULES = ['defaults', 'calendar', 'pricing', 'distance', 'pages', 'api'];
 const modSrc = MODULES.map((m) => `__def(${JSON.stringify(m)}, function (module, exports, require) {\n${read(`lib/${m}.js`)}\n});`).join('\n');
+// A literal "</script" inside inline code would end the page's script tag early; "<\\/script" means the same in JS.
+const safe = (code) => code.replace(/<\/script/gi, '<\\/script');
 
 // ---- Page templates ----
 const views = {};
@@ -91,7 +93,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     __defs[key](module, module.exports, __req);
     return module.exports;
   }
-${modSrc}
+${safe(modSrc)}
 
   var defaultsMod = __req('defaults');
   var pages = __req('pages');
@@ -163,10 +165,10 @@ ${modSrc}
 
   // ---------- page scripts ----------
   function bootPrices() {
-${prices}
+${safe(prices)}
   }
   function bootAdmin() {
-${admin}
+${safe(admin)}
   }
 
   // ---------- router (#home, #prices, #thank-you, #privacy, #terms, #admin) ----------

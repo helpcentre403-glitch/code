@@ -329,7 +329,10 @@
         return showErrors(form, r.questions);
       }
       if (r.status === 'out_of_area' || r.status === 'distance_unavailable' || r.status === 'error') return renderMessage(result, r.message);
-      if (r.status === 'ok') return renderEstimate(result, r);
+      if (r.status === 'ok') {
+        if (window.saeTrack) window.saeTrack('Lead', { content_name: service, value: r.estimate.total.min, currency: 'USD' });
+        return renderEstimate(result, r);
+      }
       renderMessage(result, 'Something went wrong. Please call or text us.');
     }).catch(function () {
       btn.disabled = false; btn.textContent = 'Generate Estimate';
@@ -394,7 +397,8 @@
     bookBtn.addEventListener('click', function () {
       bookBtn.disabled = true;
       api('/api/leads/' + encodeURIComponent(r.leadId) + '/book', {}).then(function (x) {
-        if (x.status === 'ok') window.location.href = '/thank-you?type=booked';
+        if (x.status === 'ok' && window.saeTrack) window.saeTrack('Schedule', { value: r.estimate.total.min, currency: 'USD' });
+        if (x.status === 'ok') setTimeout(function () { window.location.href = '/thank-you?type=booked'; }, window.saeTrack ? 300 : 0);
         else { bookBtn.disabled = false; msg.textContent = x.message; refreshAvailability(); }
       });
     });

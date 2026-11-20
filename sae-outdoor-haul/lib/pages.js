@@ -58,6 +58,7 @@ function pageTokens(settings) {
     FREE_CITIES: esc(b.freeCities.join(', ')),
     MAX_MILES: esc(settings.rates.distance.maxServiceMiles),
     DISTANCE_SENTENCE: distanceSentence(settings),
+    PIXEL_TAG: b.metaPixelId && /^\d{5,20}$/.test(b.metaPixelId) ? `<script src="/assets/js/pixel.js" data-pixel-id="${esc(b.metaPixelId)}"></script>` : '',
     CITY_LIST_HTML: cities.map((x) => `<li>${x}</li>`).join(''),
     CITY_SENTENCE: `${cities.join(', ')}, and nearby areas`,
     HOURS_HTML: hoursRows(settings.schedule, c.holidayNote),
@@ -136,6 +137,7 @@ function validateSettings(s) {
     need(/^\d{10}$/.test(s.business.textNumber || ''), 'Text number must be 10 digits.');
     need(typeof s.business.baseAddress === 'string' && s.business.baseAddress.trim().length > 2, 'Base address is required.');
     need(Array.isArray(s.business.freeCities) && Array.isArray(s.business.serviceAreaCities), 'City lists must be lists.');
+    need(s.business.metaPixelId == null || s.business.metaPixelId === '' || /^\d{5,20}$/.test(s.business.metaPixelId), 'Meta Pixel ID must be numbers only (or blank).');
     const sch = s.schedule;
     for (let d = 0; d < 7; d += 1) {
       const h = sch.hours[d];

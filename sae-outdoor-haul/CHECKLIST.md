@@ -25,6 +25,7 @@ Open items are at the top. Everything you confirmed is listed under **Done** at 
 - [ ] **Holiday dates for 2028 and later**: add them in Admin → Hours before late 2027.
 
 ### Hosting
+- [ ] **Meta Pixel**: create a new pixel (dataset) for SAE Outdoor and Haul in Meta Events Manager. Don't reuse Noyre's. Copy its numeric ID into Admin > Business details > Meta Pixel ID. The site then reports PageView, Lead (estimate shown), Schedule (booked), and Contact (tap to call or text). It never sends names, phone numbers, emails, or addresses. The privacy policy already mentions it. To run ads, the ad account also needs a payment method.
 - [ ] **Booking emails (set up first)**: the moment a customer taps Book This Date, the site emails Helpcentre403@gmail.com with who booked, their phone and email, the address, the date and time, the job, and the estimate. To turn it on:
   1. In your Google Account, turn on **2-Step Verification**.
   2. In Google Account > Security, create an **App password** for the website.

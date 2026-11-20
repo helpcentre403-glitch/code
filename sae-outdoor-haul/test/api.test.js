@@ -335,3 +335,20 @@ test('admin disabled when no password is configured', async () => {
     assert.equal((await s.get('/admin')).status, 503);
   } finally { await s.close(); }
 });
+
+test('Meta Pixel: off by default, on when an ID is saved in admin, bad IDs rejected', async () => {
+  const s = await startServer();
+  try {
+    assert.ok(!(await s.get('/')).text.includes('pixel.js'), 'no pixel until an ID is set');
+    const settings = (await s.admin('GET', '/api/admin/settings')).json;
+    settings.business.metaPixelId = 'abc123';
+    assert.equal((await s.admin('PUT', '/api/admin/settings', settings)).status, 400);
+    settings.business.metaPixelId = '123456789012345';
+    assert.equal((await s.admin('PUT', '/api/admin/settings', settings)).json.status, 'ok');
+    for (const p of ['/', '/prices', '/thank-you']) {
+      assert.match((await s.get(p)).text, /<script src="\/assets\/js\/pixel.js" data-pixel-id="123456789012345"><\/script>/, p);
+    }
+    const res = await fetch(`${s.base}/`);
+    assert.match(res.headers.get('content-security-policy'), /script-src 'self' https:\/\/connect\.facebook\.net/);
+  } finally { await s.close(); }
+});

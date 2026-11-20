@@ -54,7 +54,8 @@ function createApp(opts = {}) {
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
       'X-Frame-Options': 'DENY',
-      'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-ancestors 'none'",
+      // Meta Pixel needs its script host and its reporting host.
+      'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https://www.facebook.com; style-src 'self'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://connect.facebook.net; frame-ancestors 'none'",
     });
     next();
   });
