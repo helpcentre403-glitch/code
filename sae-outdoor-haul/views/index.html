@@ -49,7 +49,7 @@
           <img src="/assets/img/todo-trees.svg" alt="TODO: replace with a real Christmas tree photo" width="600" height="400" loading="lazy">
           <div class="card-body">
             <h3>Christmas Trees</h3>
-            <p>We deliver your tree, set it up, or both, for up to three trees per visit.</p>
+            <p>We deliver your tree, set it up, or both, for up to three trees per visit. You pay the tree price plus our service fee.</p>
             <a class="card-link" href="/prices#trees">See Christmas tree prices &rarr;</a>
           </div>
         </article>
@@ -65,7 +65,7 @@
         <details><summary>What services do you offer?</summary>
           <p>Junk removal, landscaping, and Christmas tree installation and delivery.</p></details>
         <details><summary>What areas do you serve?</summary>
-          <p>{{CITY_SENTENCE}} up to {{MAX_MILES}} miles from our base. Fees depend on driving distance. Driving within {{FREE_CITIES}} is free.</p></details>
+          <p>{{CITY_SENTENCE}} up to {{MAX_MILES}} miles from our base. Fees depend on driving distance. Homes in {{FREE_CITIES}} pay no travel fee.</p></details>
         <details><summary>How do I get a price?</summary>
           <p>Go to the <a href="/prices">Prices page</a>, choose your service, answer a few questions, and click Generate Estimate. You'll see a price range right away.</p></details>
         <details><summary>Is the estimate final?</summary>
@@ -75,7 +75,7 @@
         <details><summary>When do you come?</summary>
           <p>We work weekday evenings and weekends. Pick a date and time on the calendar. Availability is updated regularly.</p></details>
         <details><summary>How do the Christmas tree prices work?</summary>
-          <p>Each tree has a tree price plus a service fee for delivery, installation, or both. Distance fees are added to the total.</p></details>
+          <p>You pay for the tree itself plus a service fee for delivery, installation, or both. Distance fees are added to the total (no travel fee for homes in {{FREE_CITIES}}).</p></details>
         <details><summary>What if I'm more than {{MAX_MILES}} miles away?</summary>
           <p>Contact us. We may still be able to help, depending on our schedule.</p></details>
         <details><summary>Do I need to be home?</summary>
@@ -93,7 +93,7 @@
       <p><strong>Base:</strong> {{BASE_ADDRESS}}</p>
       <p>We serve:</p>
       <ul class="city-list">{{CITY_LIST_HTML}}<li>and nearby</li></ul>
-      <p class="note">Distance fees depend on driving distance from our base (up to {{MAX_MILES}} miles). Driving within {{FREE_CITIES}} is free.</p>
+      <p class="note">Distance fees depend on driving distance from our base (up to {{MAX_MILES}} miles). Homes in {{FREE_CITIES}} pay no travel fee.</p>
     </div>
   </section>
 

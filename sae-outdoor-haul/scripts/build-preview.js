@@ -65,12 +65,12 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 <div class="preview-bar" role="note">
   <div class="wrap">
     <strong>Website preview</strong>
-    <label for="pv-miles">Test driving distance for non-Carrollton addresses <input id="pv-miles" type="number" min="0" max="60" step="0.5" value="12"> mi</label>
+    <label for="pv-miles">Test driving distance for addresses outside Carrollton <input id="pv-miles" type="number" min="0" max="60" step="0.5" value="12"> mi</label>
     <a href="#admin">Owner admin</a>
     <button type="button" id="pv-reset">Reset preview data</button>
     <details>
       <summary>What's different in this preview</summary>
-      <p>This is a working copy of the site for review. Prices, hours, and the calendar use the real site code and your rates. The live site measures real driving distance with Google Maps; here, any address with "Carrollton" in it is free and other addresses use the test distance above. Quotes, bookings, and admin changes are saved only in this browser. On the live site, the admin page needs your password and tap-to-call and tap-to-text open your phone app; inside this preview those links may not open.</p>
+      <p>This is a working copy of the site for review. Prices, hours, and the calendar use the real site code and your rates. The live site measures real driving distance with Google Maps; here, any address with "Carrollton" or a Carrollton ZIP code (75006, 75007, 75010) in it pays no travel fee and other addresses use the test distance above. Quotes, bookings, and admin changes are saved only in this browser. On the live site, the admin page needs your password and tap-to-call and tap-to-text open your phone app; inside this preview those links may not open.</p>
     </details>
   </div>
 </div>
@@ -100,7 +100,7 @@ ${modSrc}
   var VIEWS = ${JSON.stringify(views).replace(/</g, '\\u003c')};
 
   // ---------- browser store (same interface as lib/store.js) ----------
-  var KEY = 'sae-site-preview-v1';
+  var KEY = 'sae-site-preview-v2';
   function load() { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch (e) { return null; } }
   function persist() { try { localStorage.setItem(KEY, JSON.stringify({ settings: settings, leads: leads })); } catch (e) { /* memory only */ } }
   var saved = load();
@@ -124,7 +124,7 @@ ${modSrc}
   var milesInput = document.getElementById('pv-miles');
   var distance = {
     measure: function (origin, dest) {
-      if (/carrollton/i.test(dest)) return Promise.resolve({ miles: 3, city: 'Carrollton', formattedAddress: dest });
+      if (/carrollton|\\b750(06|07|10)\\b/i.test(dest)) return Promise.resolve({ miles: 3, city: 'Carrollton', formattedAddress: dest });
       var m = Number(milesInput.value);
       if (!isFinite(m) || m < 0) m = 12;
       return Promise.resolve({ miles: m, city: null, formattedAddress: dest });

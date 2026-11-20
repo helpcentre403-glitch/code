@@ -282,3 +282,18 @@ details.lead { border-top: 1px solid var(--line); padding: 10px 0; }
 .rate-row { grid-template-columns: minmax(0, 1fr) minmax(0, 72px) auto minmax(0, 72px) auto; }
 .hours-row input, .rate-row input, .grid-2 input, .inline input, .biz-field input, .biz-field textarea { min-width: 0; }
 .grid-2 > * { min-width: 0; display: grid; gap: 4px; font-weight: 700; }
+
+/* Calendar: every day listed with its times */
+.day-list { display: grid; gap: 12px; }
+.day-row { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px 12px; }
+.day-row[hidden] { display: none; }
+.day-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; align-items: baseline; margin-bottom: 8px; }
+.day-note { font-size: .85rem; font-weight: 700; color: var(--accent); }
+.day-row .slot-grid { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); margin-top: 0; }
+.show-more { margin-top: 12px; width: 100%; }
+.chosen-slot { font-weight: 800; color: var(--accent); margin: 10px 0 0; }
+.chosen-slot:empty { display: none; }
+.callout { background: var(--accent-soft); border-left: 4px solid var(--accent); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+.callout p { margin: 4px 0 0; }
+.day-row .slot { white-space: nowrap; padding: 0 4px; font-size: .95rem; }
+.day-row .slot-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }

@@ -24,7 +24,7 @@ test('distance bands (owner rates): $10 for 0-9 mi, $20 for 10-20 mi, nothing pa
   assert.equal(pricing.distanceLine(r, dist(25)).outOfArea, true);
   const free = pricing.distanceLine(r, dist(3, 'Carrollton', true)).line;
   assert.deepEqual(range(free.price), [0, 0]);
-  assert.match(free.label, /Carrollton \(free\)/);
+  assert.match(free.label, /Carrollton address: no travel fee/);
 });
 
 test('distance fee not set yet (TODO) shows "to be confirmed", never a made-up number', () => {
@@ -97,10 +97,15 @@ test('trees: (tree price + service fee) per tree + distance', () => {
   const data = { service: 'trees', trees: [{ size: 'medium', service: 'both' }, { size: 'large', service: 'delivery' }] };
   const e = pricing.computeEstimate(data, pricedSettings(), dist(6.1));
   assert.deepEqual(range(e.total), [(80 + 75) + (100 + 75) + 10, (80 + 75) + (100 + 75) + 10]);
-  // With tree price still TODO, it is shown as "to be confirmed" and excluded from the total
+  // Owner default: each tree is estimated at "$60+" and included in the total with a "+"
   const e2 = pricing.computeEstimate(data, defaultSettings(), dist(3, 'Carrollton', true));
-  assert.deepEqual(range(e2.total), [75 + 75, 75 + 75]);
-  assert.equal(e2.sections[0].lines.filter((l) => l.status === 'tbd').length, 2);
+  assert.equal(pricing.formatPrice(e2.total), `$${60 + 75 + 60 + 75}+`);
+  assert.ok(e2.sections[0].lines[0].label.includes("we'll tell you the exact cost"));
+  // A tree price the owner clears in admin shows "to be confirmed" and is left out
+  const cleared = defaultSettings();
+  cleared.rates.trees.treePrice.medium = { min: null, max: null, plus: false };
+  const e3 = pricing.computeEstimate(data, cleared, dist(3, 'Carrollton', true));
+  assert.equal(e3.sections[0].lines.filter((l) => l.status === 'tbd').length, 1);
 });
 
 test('validation asks instead of guessing', () => {

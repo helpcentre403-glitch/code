@@ -53,7 +53,7 @@
       + '<fieldset class="step"><legend><span class="num">' + (n + 1) + '</span> Address</legend>'
       + '<label class="label" for="' + id + '-address">Service address (street, city, ZIP)</label>'
       + '<input id="' + id + '-address" name="address" autocomplete="street-address" maxlength="300" placeholder="123 Main St, Carrollton, TX 75006">'
-      + '<p class="hint">We use this to measure the driving distance fee.</p>'
+      + '<p class="hint">We use this to measure the driving distance fee. Homes in Carrollton pay no travel fee.</p>'
       + '<p class="field-error" data-error="address"></p></fieldset>'
       + '<fieldset class="step"><legend><span class="num">' + (n + 2) + '</span> Your contact info</legend>'
       + '<label class="label" for="' + id + '-name">Name</label>'
@@ -70,43 +70,51 @@
     renderCalendar(form);
   }
 
+  // Every open date is listed with all of its open times visible. One tap picks date + time.
+  var DAYS_SHOWN = 7;
   function renderCalendar(form) {
     var host = form.querySelector('[data-calendar]');
     var dateInput = form.querySelector('input[name="date"]');
     var timeInput = form.querySelector('input[name="time"]');
+    var isJunk = form.getAttribute('data-service') === 'junk';
     host.innerHTML = '';
+    dateInput.value = ''; timeInput.value = '';
     if (!availability.length) {
       host.appendChild(el('p', { class: 'alert', text: 'No open times right now. Please call or text us.' }));
       return;
     }
-    var dates = el('div', { class: 'date-strip', role: 'radiogroup', 'aria-label': 'Date' });
-    var slots = el('div', { class: 'slot-grid', role: 'radiogroup', 'aria-label': 'Time' });
-    availability.forEach(function (d) {
-      var b = el('button', { type: 'button', class: 'date-chip', 'data-date': d.date, role: 'radio', 'aria-checked': 'false' }, [
-        el('span', { class: 'dow', text: d.isToday ? 'Today' : d.label.split(',')[0] }),
-        el('span', { class: 'dm', text: d.label.split(', ')[1] || d.label }),
+    var list = el('div', { class: 'day-list', role: 'radiogroup', 'aria-label': 'Date and time' });
+    var chosen = el('p', { class: 'chosen-slot', 'aria-live': 'polite' });
+    availability.forEach(function (d, i) {
+      var head = el('div', { class: 'day-head' }, [
+        el('strong', { text: d.isToday ? 'Today, ' + (d.label.split(', ')[1] || d.label) : d.label }),
       ]);
-      b.addEventListener('click', function () { pickDate(d); });
-      dates.appendChild(b);
-    });
-    function pickDate(d) {
-      dateInput.value = d.date; timeInput.value = '';
-      dates.querySelectorAll('.date-chip').forEach(function (c) { c.setAttribute('aria-checked', String(c.getAttribute('data-date') === d.date)); });
-      slots.innerHTML = '';
+      if (d.isToday && isJunk) head.appendChild(el('span', { class: 'day-note', text: 'Same-day adds ' + config.junk.extras.sameDay }));
+      var grid = el('div', { class: 'slot-grid' });
       d.slots.forEach(function (s) {
-        var sb = el('button', { type: 'button', class: 'slot', role: 'radio', 'aria-checked': 'false', 'data-time': s.time, text: s.label });
+        var sb = el('button', { type: 'button', class: 'slot', role: 'radio', 'aria-checked': 'false', 'data-date': d.date, 'data-time': s.time, text: s.label,
+          'aria-label': d.label + ' at ' + s.label });
         sb.addEventListener('click', function () {
-          timeInput.value = s.time;
-          slots.querySelectorAll('.slot').forEach(function (x) { x.setAttribute('aria-checked', String(x === sb)); });
+          dateInput.value = d.date; timeInput.value = s.time;
+          list.querySelectorAll('.slot').forEach(function (x) { x.setAttribute('aria-checked', String(x === sb)); });
+          chosen.textContent = 'Selected: ' + d.label + ' at ' + s.label;
         });
-        slots.appendChild(sb);
+        grid.appendChild(sb);
       });
-      if (d.isToday && form.getAttribute('data-service') === 'junk') {
-        slots.appendChild(el('p', { class: 'hint full', text: 'Same-day service adds ' + config.junk.extras.sameDay + '.' }));
-      }
+      var row = el('div', { class: 'day-row', 'data-date': d.date }, [head, grid]);
+      if (i >= DAYS_SHOWN) row.hidden = true;
+      list.appendChild(row);
+    });
+    host.appendChild(list);
+    if (availability.length > DAYS_SHOWN) {
+      var more = el('button', { type: 'button', class: 'btn btn-light btn-small show-more', text: 'Show more dates (' + (availability.length - DAYS_SHOWN) + ')' });
+      more.addEventListener('click', function () {
+        list.querySelectorAll('.day-row[hidden]').forEach(function (r) { r.hidden = false; });
+        more.remove();
+      });
+      host.appendChild(more);
     }
-    host.appendChild(dates);
-    host.appendChild(slots);
+    host.appendChild(chosen);
   }
 
   // ---------- Junk ----------
@@ -201,8 +209,10 @@
     var out = form.querySelector('[data-tree-count]');
     var list = form.querySelector('[data-tree-list]');
     slider.max = String(t.maxTrees);
-    var prices = t.sizes.map(function (s) { return s.label + ': ' + t.treePrice[s.key]; }).join(' · ');
-    form.querySelector('[data-tree-price-note]').textContent = 'Tree price (charged in addition to the service fee): ' + prices + '.';
+    var same = t.sizes.every(function (s) { return t.treePrice[s.key] === t.treePrice[t.sizes[0].key]; });
+    var prices = same ? t.treePrice[t.sizes[0].key] + ' per tree, any size'
+      : t.sizes.map(function (s) { return s.label + ': ' + t.treePrice[s.key]; }).join(' · ');
+    form.querySelector('[data-tree-price-note]').textContent = 'Estimated tree price: ' + prices + '. We\'ll let you know exactly how much your tree costs before we bring it.';
     function sync() {
       var n = Number(slider.value);
       out.textContent = String(n);
@@ -234,7 +244,7 @@
       function updateFee() {
         var sz = card.querySelector('input[name="tree' + i + 'size"]:checked');
         var sv = card.querySelector('input[name="tree' + i + 'service"]:checked');
-        fee.textContent = sz && sv ? 'Service fee: $' + t.serviceFees[sz.value][sv.value] + ' + tree price ' + t.treePrice[sz.value] : '';
+        fee.textContent = sz && sv ? 'You pay: tree (estimated ' + t.treePrice[sz.value] + ') + service fee ($' + t.serviceFees[sz.value][sv.value] + ')' : '';
       }
       card.addEventListener('change', updateFee);
       card.appendChild(el('p', { class: 'label', text: 'Size' })); card.appendChild(sizes);

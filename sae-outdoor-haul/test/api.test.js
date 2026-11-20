@@ -96,7 +96,7 @@ test('distance bands through the API, Carrollton free, over 20 miles = contact u
     };
     const distLine = (j) => j.estimate.sections.find((x) => x.title === 'Distance fee').lines[0];
     assert.equal(distLine(await fee('5 Elm St, Carrollton, TX 75006')).display, '$0');
-    assert.match(distLine(await fee('5 Elm St, Carrollton, TX 75006')).label, /Within Carrollton \(free\)/);
+    assert.match(distLine(await fee('5 Elm St, Carrollton, TX 75006')).label, /Carrollton address: no travel fee/);
     assert.equal(distLine(await fee('1 Belt Line Rd, Addison')).display, '$10');
     assert.equal(distLine(await fee('nine road')).display, '$10');
     assert.equal(distLine(await fee('tenish road')).display, '$20');

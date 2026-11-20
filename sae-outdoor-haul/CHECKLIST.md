@@ -5,7 +5,7 @@ Open items are at the top. Everything you confirmed is listed under **Done** at 
 ## Still open
 
 ### Content
-- [ ] **Christmas tree purchase price**: not provided yet. Enter it in Admin → Rates (one box per size; if one price covers every size, enter it in all three). Until then, the tree price shows as "To be confirmed" and is left out of the total.
+- [ ] **Christmas tree purchase price**: set to an estimate of **$60+ per tree** (any size), as you asked. Estimates include it with a "+" and tell the customer you'll let them know the exact price. When you know real prices, change them per size in Admin → Rates.
 - [ ] **Long carry fee**: not priced yet. It shows as "To be confirmed".
 - [ ] **Photos**: four placeholders in `public/img/` are labeled "TODO: REAL PHOTO". Use your own photos, or free stock photos whose license allows business use (for example Unsplash or Pexels). Don't copy images from Google search results; most are copyrighted.
 - [ ] **FAQ answers**: I drafted these because you asked me to write them. Check that they match how you actually work:

@@ -202,8 +202,7 @@
 
     var trees = h('fieldset', { class: 'rate-group' }, [h('legend', { text: 'Christmas trees' })]);
     Object.keys(r.trees.sizes).forEach(function (size) {
-      var tp = h('input', { type: 'number', min: 0, value: r.trees.treePrice[size], 'aria-label': size + ' tree price', onchange: function () { r.trees.treePrice[size] = num(tp.value); } });
-      trees.appendChild(h('div', { class: 'rate-row' + (r.trees.treePrice[size] == null ? ' unset' : '') }, [h('span', { text: r.trees.sizes[size].label + ' tree price $' }), tp]));
+      trees.appendChild(priceRow({ price: r.trees.treePrice[size] }, r.trees.sizes[size].label + ' tree price (estimate)'));
       Object.keys(r.trees.services).forEach(function (svc) {
         var f = h('input', { type: 'number', min: 0, value: r.trees.serviceFees[size][svc], 'aria-label': size + ' ' + svc + ' fee', onchange: function () { r.trees.serviceFees[size][svc] = Number(f.value); } });
         trees.appendChild(h('div', { class: 'rate-row' }, [h('span', { text: '  ' + r.trees.services[svc] + ' fee $' }), f]));

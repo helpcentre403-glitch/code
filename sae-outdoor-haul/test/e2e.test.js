@@ -28,9 +28,19 @@ async function fillContact(section, name = 'Pat Test') {
   await section.locator('input[name="name"]').fill(name);
   await section.locator('input[name="phone"]').fill('214-555-0100');
 }
+const iso = (label) => `2026-12-${label.split(' ')[1].padStart(2, '0')}`; // 'Dec 12' -> '2026-12-12'
+async function dayRow(section, dateLabel) {
+  const row = section.locator(`.day-row[data-date="${iso(dateLabel)}"]`);
+  if (!(await row.isVisible())) await section.locator('.show-more').click();
+  return row;
+}
+async function slotsOn(section, dateLabel) {
+  return (await dayRow(section, dateLabel)).locator('.slot').allInnerTexts();
+}
 async function pickSlot(section, dateLabel, timeLabel) {
-  await section.locator('.date-chip', { hasText: dateLabel }).click();
-  await section.locator('.slot', { hasText: new RegExp(`^${timeLabel}$`) }).click();
+  const row = await dayRow(section, dateLabel);
+  await row.locator('.slot', { hasText: new RegExp(`^${timeLabel}$`) }).click();
+  assert.match(await section.locator('.chosen-slot').innerText(), new RegExp(`${dateLabel}.*${timeLabel}`));
 }
 
 test('home page: order, FAQ accordion, tap-to-call/text, no sideways scroll', async () => {
@@ -65,6 +75,11 @@ test('junk removal: full flow -> estimate breakdown -> Book This Date -> thank y
   assert.match(await sec.locator('[data-error="whatToGo"]').innerText(), /what needs to go/i);
 
   assert.equal(await sec.locator('.trailer-opt').count(), 6);
+  // Times are visible for every listed day without tapping a date first
+  const firstRow = sec.locator('.day-row').first();
+  assert.ok(await firstRow.locator('.slot').first().isVisible());
+  assert.equal(await sec.locator('.day-row:visible').count(), 7);
+  assert.deepEqual(await firstRow.locator('.slot').allInnerTexts(), ['5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM']);
   await sec.locator('textarea[name="whatToGo"]').fill('Old sectional couch, mattress, 8 boxes');
   await sec.locator('.trailer-opt', { hasText: /^Full load/ }).click();
   await sec.locator('.toggle', { hasText: 'Elevated' }).click();
@@ -94,8 +109,7 @@ test('junk removal: full flow -> estimate breakdown -> Book This Date -> thank y
   // The booked slot is gone for the next customer
   await page.goto(`${srv.base}/prices`);
   await page.waitForSelector('body[data-ready="true"]');
-  await page.locator('#junk .date-chip', { hasText: 'Dec 12' }).click();
-  const times = await page.locator('#junk .slot').allInnerTexts();
+  const times = await slotsOn(page.locator('#junk'), 'Dec 12');
   assert.ok(!times.includes('10:00 AM'));
   assert.ok(times.includes('11:00 AM'));
   assert.deepEqual(errors, []);
@@ -117,7 +131,7 @@ test('landscaping: area -> size -> Carrollton is free -> Text Me This Quote', as
   const est = page.locator('[data-result="landscaping"] .estimate');
   await est.waitFor();
   assert.equal(await est.locator('.total').innerText(), '$55');
-  assert.ok((await est.innerText()).includes('Within Carrollton (free)'));
+  assert.ok((await est.innerText()).includes('Carrollton address: no travel fee'));
   await est.getByRole('button', { name: 'Text Me This Quote' }).click();
   await page.waitForURL(/thank-you\?type=quote/);
   assert.deepEqual(errors, []);
@@ -130,6 +144,7 @@ test('christmas trees: slider starts at 0 (blocked), drag to 2, per-tree choices
   await page.waitForSelector('body[data-ready="true"]');
   const sec = page.locator('#trees');
   assert.equal(await sec.locator('[data-tree-count]').innerText(), '0');
+  assert.match(await sec.locator('.callout').innerText(), /You pay for the tree too/);
   assert.equal(await sec.locator('[data-submit]').isDisabled(), true);
 
   // Drag the slider thumb most of the way right (0..3 -> lands on 2)
@@ -208,12 +223,11 @@ test('admin: block a date and change hours, customer calendar updates right away
   const cust = await ctx.newPage();
   await cust.goto(`${srv.base}/prices`);
   await cust.waitForSelector('body[data-ready="true"]');
-  const chips = await cust.locator('#junk .date-chip').allInnerTexts();
-  assert.ok(!chips.some((c) => c.includes('Dec 15')), 'blocked date hidden');
-  await cust.locator('#junk .date-chip', { hasText: 'Dec 16' }).click();
-  assert.deepEqual(await cust.locator('#junk .slot').allInnerTexts(), ['6:00 PM', '7:00 PM', '8:00 PM']);
-  await cust.locator('#junk .date-chip', { hasText: 'Dec 17' }).click();
-  assert.deepEqual(await cust.locator('#junk .slot').allInnerTexts(), ['6:00 PM', '7:00 PM', '8:00 PM']);
+  const junk = cust.locator('#junk');
+  await junk.locator('.show-more').click();
+  assert.equal(await junk.locator('.day-row[data-date="2026-12-15"]').count(), 0, 'blocked date hidden');
+  assert.deepEqual(await slotsOn(junk, 'Dec 16'), ['6:00 PM', '7:00 PM', '8:00 PM']);
+  assert.deepEqual(await slotsOn(junk, 'Dec 17'), ['6:00 PM', '7:00 PM', '8:00 PM']);
   assert.match(await (await ctx.newPage()).goto(`${srv.base}/`).then((r) => r.text()), /Thursday:<\/strong> 6:00 PM to 9:00 PM/);
   assert.deepEqual(errors, []);
   await ctx.close();

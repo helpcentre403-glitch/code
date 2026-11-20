@@ -92,7 +92,7 @@ function publicConfig(settings) {
       sizes: Object.entries(r.trees.sizes).map(([key, v]) => ({ key, label: v.label })),
       services: Object.entries(r.trees.services).map(([key, label]) => ({ key, label })),
       serviceFees: r.trees.serviceFees,
-      treePrice: Object.fromEntries(Object.entries(r.trees.treePrice).map(([k, v]) => [k, typeof v === 'number' ? pricing.money(v) : 'To be confirmed'])),
+      treePrice: Object.fromEntries(Object.entries(r.trees.treePrice).map(([k, v]) => [k, pricing.formatPrice(v)])),
     },
   };
 }
@@ -140,7 +140,7 @@ function validateSettings(s) {
     const groups = [r.junk.loads, r.junk.items, r.junk.cleanouts, r.junk.extras, r.landscaping.front, r.landscaping.back, r.landscaping.both];
     for (const g of groups) for (const [k, v] of Object.entries(g)) need(priceOk(v.price), `Price for "${v.label || k}" is invalid (low must be a number and high must be at least low).`);
     for (const size of Object.keys(r.trees.sizes)) {
-      need(r.trees.treePrice[size] === null || typeof r.trees.treePrice[size] === 'number', `Tree price for ${size} must be a number or blank.`);
+      need(priceOk(r.trees.treePrice[size]), `Tree price for ${size} is invalid (low must be a number and high must be at least low).`);
       for (const svc of Object.keys(r.trees.services)) need(typeof r.trees.serviceFees[size][svc] === 'number', `Tree service fee ${size}/${svc} must be a number.`);
     }
   } catch (e) {

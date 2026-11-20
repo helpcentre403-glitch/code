@@ -169,8 +169,8 @@ function defaultSettings() {
           medium: { delivery: 50, installation: 40, both: 75 },
           large: { delivery: 75, installation: 60, both: 115 },
         },
-        // TODO: [TREE PRICE]. If one price applies to every size, enter it in all three.
-        treePrice: { small: null, medium: null, large: null },
+        // Owner: estimate "over $60" per tree; the crew tells the customer the exact price.
+        treePrice: { small: p(60, 60, true), medium: p(60, 60, true), large: p(60, 60, true) },
         maxTrees: 3,
       },
     },

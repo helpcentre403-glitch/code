@@ -31,7 +31,7 @@ function tmpDir() {
 function pricedSettings() {
   const s = defaultSettings();
   s.rates.junk.extras.longCarry.price = { min: 30, max: 30, plus: false };
-  s.rates.trees.treePrice = { small: 60, medium: 80, large: 100 };
+  s.rates.trees.treePrice = { small: { min: 60, max: 60, plus: false }, medium: { min: 80, max: 80, plus: false }, large: { min: 100, max: 100, plus: false } };
   return s;
 }
 

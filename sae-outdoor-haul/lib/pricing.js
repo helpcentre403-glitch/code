@@ -116,7 +116,7 @@ function validate(service, body, settings) {
 function distanceLine(rates, distance) {
   const d = rates.distance;
   if (distance.free) {
-    return { outOfArea: false, line: { label: `Within ${distance.city} (free)`, price: fixed(0), status: 'ok' } };
+    return { outOfArea: false, line: { label: `${distance.city || 'Carrollton'} address: no travel fee`, price: fixed(0), status: 'ok' } };
   }
   const rounded = Math.round(distance.miles);
   if (rounded > d.maxServiceMiles) return { outOfArea: true };
@@ -187,7 +187,8 @@ function computeEstimate(data, settings, distance, { isSameDay = false } = {}) {
     const t = rates.trees;
     const lines = [];
     data.trees.forEach((tr, i) => {
-      lines.push(line(`Tree ${i + 1}: ${t.sizes[tr.size].label} tree price`, fixed(t.treePrice[tr.size])));
+      // Tree price is an estimate (e.g. "$60+"); the crew confirms the exact price.
+      lines.push(line(`Tree ${i + 1}: ${t.sizes[tr.size].label} tree (estimated price, we'll tell you the exact cost)`, t.treePrice[tr.size]));
       lines.push(line(`Tree ${i + 1}: ${t.services[tr.service]} fee`, fixed(t.serviceFees[tr.size][tr.service])));
     });
     sections.push(section('Base price', lines));
@@ -237,7 +238,7 @@ function templateSummary(data, estimate, settings) {
   let s = `Your ${svc} estimate is ${formatPrice(estimate.total)}`;
   if (estimate.hasUnpriced) s += ', plus any items marked to be confirmed';
   s += '.';
-  if (data.service === 'trees') s += ` That covers ${data.trees.length} tree${data.trees.length > 1 ? 's' : ''}.`;
+  if (data.service === 'trees') s += ` That covers ${data.trees.length} tree${data.trees.length > 1 ? 's' : ''}: the price of each tree plus our service fee. Tree prices are estimates; we'll let you know exactly how much each tree costs.`;
   return `${s} ${settings.business.name} will confirm the final price before work starts.`;
 }
 
