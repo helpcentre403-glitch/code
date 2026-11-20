@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{>head}}
+<title>Thank You | {{BUSINESS_NAME}}</title>
+<meta name="robots" content="noindex">
+</head>
+<body>
+{{>header}}
+<main id="main" class="section">
+  <div class="wrap narrow center thanks">
+    <svg class="star big-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.6 7.3L12 17.8 5.8 21.5l1.6-7.3L2 9.5l7.1-.6z"/></svg>
+    <h1>Got it. We'll text you to confirm.</h1>
+    <p class="lead">Questions in the meantime? Reach us here:</p>
+    <ul class="contact-list light">
+      <li><span>Phone</span> <a href="{{PHONE_TEL}}">{{PHONE_DISPLAY}}</a></li>
+      <li><span>Text</span> <a href="{{TEXT_SMS}}">{{TEXT_DISPLAY}}</a></li>
+    </ul>
+    <p><a class="btn btn-light" href="/">Back to Home</a></p>
+  </div>
+</main>
+{{>footer}}
+</body>
+</html>

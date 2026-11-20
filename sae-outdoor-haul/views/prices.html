@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{>head}}
+<title>Prices and Online Estimates | {{BUSINESS_NAME}}</title>
+<meta name="description" content="Get an instant price range for junk removal, landscaping, or Christmas tree delivery and installation in Dallas-Fort Worth.">
+</head>
+<body>
+{{>header}}
+<main id="main">
+  <section class="page-head">
+    <div class="wrap">
+      <h1>Prices</h1>
+      <p class="lead">Choose your service, answer a few questions, and click <strong>Generate Estimate</strong>.</p>
+      <nav class="jump" aria-label="Jump to a service">
+        <a href="#junk">Junk Removal</a>
+        <a href="#landscaping">Landscaping</a>
+        <a href="#trees">Christmas Trees</a>
+      </nav>
+      <noscript><p class="alert">The estimate forms need JavaScript. You can also call <a href="{{PHONE_TEL}}">{{PHONE_DISPLAY}}</a> or <a href="{{TEXT_SMS}}">text us</a>.</p></noscript>
+    </div>
+  </section>
+
+  <!-- ============ JUNK REMOVAL ============ -->
+  <section class="section price-section" id="junk">
+    <div class="wrap narrow">
+      <h2 class="section-title">Junk Removal</h2>
+      <form class="quote-form" data-service="junk" novalidate>
+        <fieldset class="step">
+          <legend><span class="num">1</span> What needs to go? <span class="req">Required</span></legend>
+          <textarea name="whatToGo" rows="3" maxlength="1000" required placeholder="Example: old sectional couch, 10 boxes, a broken treadmill"></textarea>
+          <p class="field-error" data-error="whatToGo"></p>
+        </fieldset>
+
+        <fieldset class="step">
+          <legend><span class="num">2</span> How much?</legend>
+          <p class="hint">Picture our standard enclosed cargo trailer. Pick how full your load would make it.</p>
+          <div class="trailer-picker" data-loads role="radiogroup" aria-label="Trailer load"></div>
+          <p class="hint">Or skip this and add single items or a cleanout below. If you pick a load, we price by the load.</p>
+          <p class="field-error" data-error="load"></p>
+        </fieldset>
+
+        <fieldset class="step">
+          <legend><span class="num">3</span> Where is it? <span class="req">Choose all that apply</span></legend>
+          <div class="toggle-group">
+            <label class="toggle"><input type="checkbox" name="locations" value="ground"><span>Ground floor</span></label>
+            <label class="toggle"><input type="checkbox" name="locations" value="outdoors"><span>Outdoors (driveway or curb)</span></label>
+            <label class="toggle"><input type="checkbox" name="locations" value="elevated"><span>Elevated (upper floor or stairs) <small data-price="stairs"></small></span></label>
+            <label class="toggle"><input type="checkbox" name="locations" value="longCarry"><span>Long carry <small data-price="longCarry"></small></span></label>
+            <label class="toggle"><input type="checkbox" name="locations" value="garageShed"><span>Garage or shed</span></label>
+          </div>
+          <p class="field-error" data-error="locations"></p>
+          <label class="label" for="junk-special">Anything special we should know? <span class="opt">Optional</span></label>
+          <textarea id="junk-special" name="special" rows="2" maxlength="1000" placeholder="Gate code, tight hallway, items that need to come apart..."></textarea>
+          <div class="toggle-group">
+            <label class="toggle"><input type="checkbox" name="heavyLifting"><span>Very heavy items <small data-price="heavyLifting"></small></span></label>
+            <label class="toggle"><input type="checkbox" name="disassembly"><span>Needs disassembly <small data-price="disassembly"></small></span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="step">
+          <legend><span class="num">4</span> Items <span class="opt">Optional</span></legend>
+          <p class="hint">Add single items. Starting prices shown.</p>
+          <div class="item-grid" data-items></div>
+          <p class="field-error" data-error="items"></p>
+        </fieldset>
+
+        <fieldset class="step">
+          <legend><span class="num">5</span> Cleanout type <span class="opt">Optional</span></legend>
+          <div class="chip-group" data-cleanouts role="radiogroup" aria-label="Cleanout type"></div>
+          <p class="field-error" data-error="cleanout"></p>
+        </fieldset>
+
+        <div data-common data-step-start="6"></div>
+      </form>
+      <div class="result" data-result="junk" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ============ LANDSCAPING ============ -->
+  <section class="section section-alt price-section" id="landscaping">
+    <div class="wrap narrow">
+      <h2 class="section-title">Landscaping</h2>
+      <form class="quote-form" data-service="landscaping" novalidate>
+        <fieldset class="step">
+          <legend><span class="num">1</span> Which area?</legend>
+          <div class="chip-group" role="radiogroup" aria-label="Area">
+            <label class="chip"><input type="radio" name="area" value="front"><span>Front yard</span></label>
+            <label class="chip"><input type="radio" name="area" value="back"><span>Back yard</span></label>
+            <label class="chip"><input type="radio" name="area" value="both"><span>Both</span></label>
+          </div>
+          <p class="field-error" data-error="area"></p>
+        </fieldset>
+        <fieldset class="step">
+          <legend><span class="num">2</span> Lawn size</legend>
+          <p class="hint">Square footage counts mowable grass only. Price is per visit.</p>
+          <div class="size-list" data-sizes role="radiogroup" aria-label="Lawn size"><p class="hint">Choose an area first.</p></div>
+          <p class="field-error" data-error="size"></p>
+        </fieldset>
+        <div data-common data-step-start="3"></div>
+      </form>
+      <div class="result" data-result="landscaping" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ============ CHRISTMAS TREES ============ -->
+  <section class="section price-section" id="trees">
+    <div class="wrap narrow">
+      <h2 class="section-title">Christmas Trees</h2>
+      <form class="quote-form" data-service="trees" novalidate>
+        <fieldset class="step">
+          <legend><span class="num">1</span> How many trees?</legend>
+          <div class="slider-wrap">
+            <output class="tree-count" data-tree-count aria-live="polite">0</output>
+            <input type="range" name="count" min="0" max="3" step="1" value="0" aria-label="Number of trees" data-tree-slider>
+            <div class="slider-scale" aria-hidden="true"><span>0</span><span>1</span><span>2</span><span>3</span></div>
+          </div>
+          <p class="field-error" data-error="count"></p>
+        </fieldset>
+        <fieldset class="step">
+          <legend><span class="num">2</span> Size and service for each tree</legend>
+          <div data-tree-list><p class="hint">Drag the slider to choose how many trees.</p></div>
+          <p class="hint" data-tree-price-note></p>
+        </fieldset>
+        <div data-common data-step-start="3"></div>
+      </form>
+      <div class="result" data-result="trees" aria-live="polite"></div>
+    </div>
+  </section>
+</main>
+{{>footer}}
+<script src="/assets/js/prices.js" defer></script>
+</body>
+</html>

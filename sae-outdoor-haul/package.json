@@ -1,0 +1,18 @@
+{
+  "name": "sae-outdoor-haul",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lead-generation website for SAE Outdoor and Haul (junk removal, landscaping, Christmas trees) in Dallas-Fort Worth.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/unit.test.js test/api.test.js",
+    "test:e2e": "node --test test/e2e.test.js",
+    "test:all": "node --test test/unit.test.js test/api.test.js test/e2e.test.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.11.0",
+    "express": "^4.22.3"
+  }
+}

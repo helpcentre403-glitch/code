@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{>head}}
+<title>Admin | {{BUSINESS_NAME}}</title>
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body class="admin">
+<header class="site-header"><div class="wrap header-inner">
+  <a class="brand" href="/"><span>{{BUSINESS_NAME}} Admin</span></a>
+  <nav class="nav admin-tabs" aria-label="Admin">
+    <a href="#leads">Leads</a><a href="#calendar">Calendar</a><a href="#hours">Hours</a><a href="#rates">Rates</a><a href="#business">Business</a>
+  </nav>
+</div></header>
+<main id="main" class="wrap">
+  <p class="admin-status" data-status aria-live="polite"></p>
+
+  <section class="admin-card" id="leads">
+    <h2>Leads</h2>
+    <p class="hint">Newest first. Every estimate is saved here with all the customer's answers.</p>
+    <div data-leads></div>
+  </section>
+
+  <section class="admin-card" id="calendar">
+    <h2>Calendar</h2>
+    <p class="hint">Tap a time to block or open it. Changes show on the customer calendar right away.</p>
+    <div class="legend"><span class="slot-status open">Open</span><span class="slot-status blocked">Blocked</span><span class="slot-status booked">Booked</span><span class="slot-status past">Past</span></div>
+    <div class="admin-add-slot">
+      <label class="label">Open an extra time (outside normal hours)</label>
+      <div class="inline"><input type="date" data-extra-date><input type="time" step="900" data-extra-time><button class="btn btn-small btn-accent" type="button" data-add-extra>Open time</button></div>
+    </div>
+    <div data-admin-calendar></div>
+  </section>
+
+  <section class="admin-card" id="hours">
+    <h2>Hours and holidays</h2>
+    <div data-hours></div>
+    <div class="inline"><input type="date" data-holiday-date><button class="btn btn-small btn-accent" type="button" data-add-holiday>Add holiday</button></div>
+    <ul class="tag-list" data-holidays></ul>
+    <div class="grid-2">
+      <label>Slot length (minutes)<input type="number" min="15" max="480" step="15" data-sched="slotMinutes"></label>
+      <label>Booking window (days ahead)<input type="number" min="1" max="120" data-sched="bookingWindowDays"></label>
+      <label>Same-day notice (minutes)<input type="number" min="0" data-sched="minLeadMinutes"></label>
+    </div>
+    <button class="btn btn-accent" type="button" data-save>Save hours</button>
+  </section>
+
+  <section class="admin-card" id="rates">
+    <h2>Rates table</h2>
+    <p class="hint">Leave a box blank if the price is not set yet. Blank prices show as "To be confirmed" and are left out of totals. Tick "+" for open-ended prices like "$150+".</p>
+    <div data-rates></div>
+    <button class="btn btn-accent" type="button" data-save>Save rates</button>
+  </section>
+
+  <section class="admin-card" id="business">
+    <h2>Business details and FAQ answers</h2>
+    <div data-business></div>
+    <button class="btn btn-accent" type="button" data-save>Save details</button>
+  </section>
+</main>
+<script src="/assets/js/admin.js" defer></script>
+</body>
+</html>

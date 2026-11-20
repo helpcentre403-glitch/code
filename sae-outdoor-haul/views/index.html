@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{>head}}
+<title>{{BUSINESS_NAME}} | Junk Removal, Landscaping, Christmas Trees in DFW</title>
+<meta name="description" content="{{BUSINESS_NAME}}: junk removal, landscaping, and Christmas tree delivery and installation in Dallas-Fort Worth. Get a price range online in minutes.">
+</head>
+<body>
+{{>header}}
+<main id="main">
+
+  <!-- 1. HERO -->
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow">Dallas-Fort Worth &middot; Weekday evenings &amp; weekends</p>
+        <h1>{{BUSINESS_NAME}}: Junk Removal, Landscaping, and Christmas Trees</h1>
+        <p class="lead">Answer a few questions and see your price range right away. No surprises.</p>
+        <a class="btn btn-accent btn-big" href="/prices">Get a Quote</a>
+      </div>
+      <figure class="placeholder-img hero-img">
+        <img src="/assets/img/todo-hero.svg" alt="TODO: replace with a real photo of the crew and trailer" width="800" height="600">
+      </figure>
+    </div>
+  </section>
+
+  <!-- 2. SERVICES -->
+  <section class="section" id="services">
+    <div class="wrap">
+      <h2 class="section-title">Services</h2>
+      <div class="cards">
+        <article class="card">
+          <img src="/assets/img/todo-junk.svg" alt="TODO: replace with a real junk removal photo" width="600" height="400" loading="lazy">
+          <div class="card-body">
+            <h3>Junk Removal</h3>
+            <p>We haul away furniture, appliances, yard waste, and full cleanouts, priced by how much of our trailer you fill.</p>
+            <a class="card-link" href="/prices#junk">See junk removal prices &rarr;</a>
+          </div>
+        </article>
+        <article class="card">
+          <img src="/assets/img/todo-landscaping.svg" alt="TODO: replace with a real landscaping photo" width="600" height="400" loading="lazy">
+          <div class="card-body">
+            <h3>Landscaping</h3>
+            <p>Lawn visits for your front yard, back yard, or both, priced by the size of your grass.</p>
+            <a class="card-link" href="/prices#landscaping">See landscaping prices &rarr;</a>
+          </div>
+        </article>
+        <article class="card">
+          <img src="/assets/img/todo-trees.svg" alt="TODO: replace with a real Christmas tree photo" width="600" height="400" loading="lazy">
+          <div class="card-body">
+            <h3>Christmas Trees</h3>
+            <p>We deliver your tree, set it up, or both, for up to three trees per visit.</p>
+            <a class="card-link" href="/prices#trees">See Christmas tree prices &rarr;</a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. FAQ -->
+  <section class="section section-alt" id="faq">
+    <div class="wrap narrow">
+      <h2 class="section-title">FAQ</h2>
+      <div class="faq">
+        <details><summary>What services do you offer?</summary>
+          <p>Junk removal, landscaping, and Christmas tree installation and delivery.</p></details>
+        <details><summary>What areas do you serve?</summary>
+          <p>{{CITY_SENTENCE}} up to {{MAX_MILES}} miles from our base. Fees depend on driving distance. Driving within {{FREE_CITIES}} is free.</p></details>
+        <details><summary>How do I get a price?</summary>
+          <p>Go to the <a href="/prices">Prices page</a>, choose your service, answer a few questions, and click Generate Estimate. You'll see a price range right away.</p></details>
+        <details><summary>Is the estimate final?</summary>
+          <p>It's a range based on the details you give us. Our crew confirms the final price before work starts, usually after seeing the items or photos.</p></details>
+        <details><summary>What don't you take?</summary>
+          <p>{{FAQ_DONT_TAKE}}. If you're unsure about an item, ask us before booking.</p></details>
+        <details><summary>When do you come?</summary>
+          <p>We work weekday evenings and weekends. Pick a date and time on the calendar. Availability is updated regularly.</p></details>
+        <details><summary>How do the Christmas tree prices work?</summary>
+          <p>Each tree has a tree price plus a service fee for delivery, installation, or both. Distance fees are added to the total.</p></details>
+        <details><summary>What if I'm more than {{MAX_MILES}} miles away?</summary>
+          <p>Contact us. We may still be able to help, depending on our schedule.</p></details>
+        <details><summary>Do I need to be home?</summary>
+          <p>{{FAQ_HOME}}</p></details>
+        <details><summary>How do I pay?</summary>
+          <p>{{FAQ_PAY}}</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. WHERE WE ARE -->
+  <section class="section" id="where">
+    <div class="wrap narrow">
+      <h2 class="section-title">Where We Are</h2>
+      <p><strong>Base:</strong> {{BASE_ADDRESS}}</p>
+      <p>We serve:</p>
+      <ul class="city-list">{{CITY_LIST_HTML}}<li>and nearby</li></ul>
+      <p class="note">Distance fees depend on driving distance from our base (up to {{MAX_MILES}} miles). Driving within {{FREE_CITIES}} is free.</p>
+    </div>
+  </section>
+
+  <!-- 5. CONTACT -->
+  <section class="section section-dark" id="contact">
+    <div class="wrap narrow">
+      <h2 class="section-title">Contact</h2>
+      <ul class="contact-list">
+        <li><span>Phone</span> <a href="{{PHONE_TEL}}">{{PHONE_DISPLAY}}</a></li>
+        <li><span>Text</span> <a href="{{TEXT_SMS}}">{{TEXT_DISPLAY}}</a></li>
+        <li><span>Email</span> {{EMAIL_HTML}}</li>
+      </ul>
+      <h3>Hours (all services)</h3>
+      <ul class="hours">{{HOURS_HTML}}</ul>
+    </div>
+  </section>
+</main>
+<!-- 6. FOOTER -->
+{{>footer}}
+</body>
+</html>
