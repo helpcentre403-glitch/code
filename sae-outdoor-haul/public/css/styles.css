@@ -334,3 +334,5 @@ button, input, select, textarea { color: var(--ink); }
 .slot.taken small { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
 .date-chip.full { opacity: .55; border-style: dashed; }
 .date-chip.full .count { font-weight: 900; }
+
+.label .hint { display: block; font-weight: 400; margin: 2px 0 0; }

@@ -75,7 +75,7 @@
       + '<span>Text me my booking confirmation, estimate receipt, and appointment updates from ' + config.business.name + '. '
       + 'Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Not required to book. '
       + 'See our <a href="/privacy" target="_blank">Privacy Policy</a> and <a href="/terms#sms" target="_blank">Terms of Service</a>.</span></label>'
-      + '<label class="label" for="' + id + '-email">Email <span class="opt">Optional</span></label>'
+      + '<label class="label" for="' + id + '-email">Email <span class="opt">Optional</span> <small class="hint">We email your booking confirmation and estimate here.</small></label>'
       + '<input id="' + id + '-email" name="email" type="email" autocomplete="email" maxlength="200">'
       + '<p class="field-error" data-error="contact.email"></p></fieldset>'
       + '<button type="submit" class="btn btn-accent btn-big btn-block" data-submit>Generate Estimate</button>'
@@ -459,14 +459,17 @@
     // One button: book, then the customer gets their confirmation (text when a text service is set up).
     var bookBtn = el('button', { type: 'button', class: 'btn btn-accent btn-big btn-block book-btn' }, [
       el('span', { text: 'Book This Date' }),
-      el('small', { text: config.autoText && r.smsConsent ? "We'll text you automatically" : "We'll text you to confirm" }),
+      el('small', { text: config.autoText && r.smsConsent
+        ? (r.emailGiven ? "We'll text and email your confirmation automatically" : "We'll text you automatically")
+        : (r.emailGiven ? "We'll email your confirmation and text you to confirm" : "We'll text you to confirm") }),
     ]);
     var msg = el('p', { class: 'hint', 'aria-live': 'polite' });
     bookBtn.addEventListener('click', function () {
       bookBtn.disabled = true;
       api('/api/leads/' + encodeURIComponent(r.leadId) + '/book', {}).then(function (x) {
         if (x.status === 'ok' && window.saeTrack) window.saeTrack('Schedule', { value: r.estimate.total.min, currency: 'USD' });
-        if (x.status === 'ok') setTimeout(function () { window.location.href = '/thank-you?type=booked'; }, window.saeTrack ? 300 : 0);
+        var thanks = '/thank-you?type=booked' + (r.emailGiven ? '&email=1' : '');
+        if (x.status === 'ok') setTimeout(function () { window.location.href = thanks; }, window.saeTrack ? 300 : 0);
         else { bookBtn.disabled = false; msg.textContent = x.message; refreshAvailability(); }
       });
     });

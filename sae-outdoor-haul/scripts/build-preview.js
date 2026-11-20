@@ -39,7 +39,7 @@ for (const k of Object.keys(views)) {
 // ---- Page scripts, turned into re-runnable boot functions ----
 const prices = read('public/js/prices.js')
   .replace("window.location.href = '/thank-you?type=quote'", "location.hash = 'thank-you'")
-  .replace("window.location.href = '/thank-you?type=booked'", "location.hash = 'thank-you'");
+  .replace("window.location.href = thanks", "location.hash = 'thank-you'");
 const admin = read('public/js/admin.js').replace("confirm('Cancel this booking?')", 'true');
 
 const css = read('public/css/styles.css');

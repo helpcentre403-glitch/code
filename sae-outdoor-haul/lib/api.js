@@ -212,7 +212,7 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
         addressUnverified: distanceInfo.unverified,
         estimate, summary, aiQuestions, booking: { date: data.date, time: data.time, status: 'requested' },
       });
-      return ok({ status: 'ok', leadId: lead.id, smsConsent: data.contact.smsConsent, estimate: decorate(estimate), summary, disclaimer: DISCLAIMER, date: data.date, time: data.time, dateLabel: `${cal.formatDate(data.date)}, ${cal.formatTime(data.time)}` });
+      return ok({ status: 'ok', leadId: lead.id, smsConsent: data.contact.smsConsent, emailGiven: Boolean(data.contact.email), estimate: decorate(estimate), summary, disclaimer: DISCLAIMER, date: data.date, time: data.time, dateLabel: `${cal.formatDate(data.date)}, ${cal.formatTime(data.time)}` });
     },
 
     async textQuote(id) {

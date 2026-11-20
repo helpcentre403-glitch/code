@@ -103,6 +103,7 @@ test('junk removal: full flow -> estimate breakdown -> Book This Date -> thank y
   await est.locator('.book-btn').click();
   await page.waitForURL(/thank-you/);
   assert.match(await page.locator('h1').innerText(), /Got it\. We.ll text you to confirm\./);
+  assert.equal(await page.locator('.email-note').count(), 0, 'no email promise when no email was given');
   assert.equal(await page.locator('main a[href="tel:+14697561984"]').count(), 1);
   assert.equal(await page.locator('main a[href="sms:+14697561984"]').count(), 1);
 

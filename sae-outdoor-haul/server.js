@@ -94,7 +94,13 @@ function createApp(opts = {}) {
   const page = (name) => (req, res) => res.type('html').send(render(name, store.getSettings()));
   app.get('/', page('index'));
   app.get('/prices', page('prices'));
-  app.get('/thank-you', page('thank-you'));
+  app.get('/thank-you', (req, res) => {
+    let html = render('thank-you', store.getSettings());
+    if (req.query.email === '1') {
+      html = html.replace('<!--EMAIL_NOTE-->', '<p class="lead email-note"><strong>Check your email</strong> for your booking confirmation and estimate receipt. If you don\'t see it in a few minutes, check your Spam or Promotions folder.</p>');
+    }
+    res.type('html').send(html);
+  });
   app.get('/privacy', page('privacy'));
   app.get('/terms', page('terms'));
   app.get('/admin', requireAdmin, (req, res) => { res.set('Cache-Control', 'no-store'); page('admin')(req, res); });

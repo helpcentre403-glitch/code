@@ -530,3 +530,13 @@ test('alerts go to several people: two phones and two emails', async () => {
   const t = (await api.testText()).json;
   assert.match(t.message, /4697561984, 4696864690/);
 });
+
+test('email given: estimate says so and thank-you page tells them to check their email', async () => {
+  const s = await startServer({ settings: pricedSettings() });
+  try {
+    const r = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-12', time: '15:00', address: '5 Elm St, Carrollton', cityZone: 'inside' }, contact: { ...contact, email: 'pat@example.com' } });
+    assert.equal(r.json.emailGiven, true);
+    assert.match((await s.get('/thank-you?type=booked&email=1')).text, /Check your email<\/strong> for your booking confirmation/);
+    assert.ok(!/Check your email/.test((await s.get('/thank-you?type=booked')).text));
+  } finally { await s.close(); }
+});
