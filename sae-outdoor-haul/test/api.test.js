@@ -509,3 +509,24 @@ test('admin Send test text: not set up, success, and Twilio errors explained', a
     assert.match((await bad.admin('POST', '/api/admin/test-text', {})).json.message, /Account SID or Auth Token is wrong/);
   } finally { await bad.close(); }
 });
+
+test('alerts go to several people: two phones and two emails', async () => {
+  const { createApi } = require('../lib/api');
+  const { defaultSettings } = require('../lib/defaults');
+  let settings = defaultSettings(); const leads = [];
+  const store = { getSettings: () => settings, saveSettings: (x) => { settings = x; }, listLeads: () => leads, getLead: (id) => leads.find((l) => l.id === id) || null,
+    addLead: (l) => { const f = { id: 'L' + leads.length, status: 'new', ...l }; leads.push(f); return f; },
+    updateLead: (id, p) => { const i = leads.findIndex((l) => l.id === id); leads[i] = { ...leads[i], ...p }; return leads[i]; } };
+  const texts = []; const mails = [];
+  const api = createApi({ store, now: () => new Date('2026-12-07T18:00:00Z'), log: { error() {}, log() {} },
+    distance: { measure: async () => ({ miles: 3, city: 'Carrollton' }) },
+    sms: { send: async (to, body) => { texts.push(to); return true; } },
+    mailer: { send: async (to) => { mails.push(to); return true; } },
+    notifyPhone: '4697561984, 4696864690', notifyEmail: 'owner@example.com, Helpcentre403@gmail.com', textEmail: '4697561984@tmomail.net' });
+  const r = await api.estimate({ service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-12', time: '10:00', address: '5 Elm St, Carrollton', cityZone: 'inside' }, contact: { name: 'Pat', phone: '2145550100' } });
+  await api.book(r.json.leadId);
+  assert.deepEqual(texts.sort(), ['4696864690', '4697561984']);
+  assert.deepEqual(mails.sort(), ['4697561984@tmomail.net', 'Helpcentre403@gmail.com', 'owner@example.com']);
+  const t = (await api.testText()).json;
+  assert.match(t.message, /4697561984, 4696864690/);
+});

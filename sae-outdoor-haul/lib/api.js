@@ -107,14 +107,23 @@ function customerEmail(lead, settings) {
 
 function createApi({ store, distance, ai = null, sms = null, mailer = null, notifyEmail = null, textEmail = null, now = () => new Date(), log = console, defaults = null, notifyPhone = null }) {
   // Email the owner. Never blocks or breaks the customer's request if email fails.
+  // Alerts can go to several people: comma-separated lists, e.g. "a@x.com, b@y.com" or "4695550100, 4695550101".
+  const list = (v) => String(v || '').split(',').map((x) => x.trim()).filter(Boolean);
+  const alertEmails = () => list(notifyEmail || store.getSettings().business.email);
+  const alertPhones = () => list(notifyPhone || store.getSettings().business.phone);
+
   async function emailOwner(subject, body) {
-    const to = notifyEmail || store.getSettings().business.email;
-    if (!mailer || !to) return false;
-    try {
-      const okSent = await mailer.send(to, subject, body);
-      if (log.log) log.log(`Owner email sent to ${to}: ${subject}`);
-      return okSent;
-    } catch (e) { log.error('Owner email failed:', e.message); return false; }
+    const to = alertEmails();
+    if (!mailer || !to.length) return false;
+    let any = false;
+    for (const addr of to) {
+      try {
+        await mailer.send(addr, subject, body);
+        if (log.log) log.log(`Owner email sent to ${addr}: ${subject}`);
+        any = true;
+      } catch (e) { log.error(`Owner email to ${addr} failed:`, e.message); }
+    }
+    return any;
   }
 
   const bookedKeys = () => new Set(
@@ -229,12 +238,14 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
       }
       store.updateLead(lead.id, { booking: { ...lead.booking, status: 'booked', bookedAt: now().toISOString() }, status: 'booked' });
       // Text the owner who booked, when, and what the job is.
-      const ownerPhone = notifyPhone || store.getSettings().business.phone;
       let ownerTexted = false;
-      if (sms && ownerPhone) {
-        try {
-          ownerTexted = await sms.send(ownerPhone, bookingText(lead, store.getSettings()).slice(0, 1500));
-        } catch (e) { log.error('Owner booking text failed:', e.message); }
+      if (sms) {
+        for (const ownerPhone of alertPhones()) {
+          try {
+            await sms.send(ownerPhone, bookingText(lead, store.getSettings()).slice(0, 1500));
+            ownerTexted = true;
+          } catch (e) { log.error(`Owner booking text to ${ownerPhone} failed:`, e.message); }
+        }
       }
       const booked = store.getLead(lead.id);
       const s2 = store.getSettings();
@@ -267,7 +278,9 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
           const b = lead.booking;
           const short = [`${SERVICE_NAMES[lead.service] || lead.service}`, `${cal.formatDate(b.date)} ${cal.formatTime(b.time)}`,
             `${lead.contact.name} ${lead.contact.phone}`, (lead.answers && lead.answers.address) || ''].join(' | ');
-          ownerTextEmailed = await mailer.send(textEmail, 'New booking', short.slice(0, 150));
+          for (const addr of list(textEmail)) {
+            try { await mailer.send(addr, 'New booking', short.slice(0, 150)); ownerTextEmailed = true; } catch (e) { log.error(`Email-to-text alert to ${addr} failed:`, e.message); }
+          }
         } catch (e) { log.error('Email-to-text alert failed:', e.message); }
       }
       store.updateLead(lead.id, { ownerTexted, ownerEmailed, ownerTextEmailed, customerTexted, customerEmailed });
@@ -279,10 +292,11 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
 
     /** Admin "Send test text": texts the business phone and reports Twilio's exact error. */
     async testText() {
-      const to = notifyPhone || store.getSettings().business.phone;
+      const phones = alertPhones();
+      const to = phones.join(', ');
       if (!sms) return ok({ status: 'error', message: 'Texting is not set up on the server. On Render, add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_MESSAGING_SERVICE_SID (or TWILIO_FROM) under Environment, then save.' });
       try {
-        await sms.send(to, `${store.getSettings().business.name}: test text from your website. Booking texts are working. Reply STOP to opt out.`);
+        for (const p of phones) await sms.send(p, `${store.getSettings().business.name}: test text from your website. Booking texts are working. Reply STOP to opt out.`);
         return ok({ status: 'ok', message: `Twilio accepted the text to ${to}. If it doesn't arrive within a few minutes, check the message log in Twilio for error 30034 (A2P registration not approved yet).` });
       } catch (e) {
         const raw = String(e && e.message || e);
@@ -296,13 +310,13 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
 
     /** Admin "Send test email": reports exactly why email is not working. */
     async testEmail() {
-      const to = notifyEmail || store.getSettings().business.email;
+      const to = alertEmails().join(', ');
       if (!mailer) {
         return ok({ status: 'error', message: 'Email is not set up on the server. On Render, add GMAIL_USER and GMAIL_APP_PASSWORD under Environment, then save.' });
       }
       if (!to) return ok({ status: 'error', message: 'No business email is set. Add one under Business details.' });
       try {
-        await mailer.send(to, 'Test email from your website', `This is a test from your SAE Outdoor and Haul website.\nIf you can read this, booking emails will reach ${to}.`);
+        for (const addr of alertEmails()) await mailer.send(addr, 'Test email from your website', `This is a test from your SAE Outdoor and Haul website.\nIf you can read this, booking emails will reach ${to}.`);
         return ok({ status: 'ok', message: `Sent to ${to}. Check Inbox, Spam, and Sent (Gmail sometimes files emails you send to yourself under Sent).` });
       } catch (e) {
         const raw = String(e && e.message || e);
