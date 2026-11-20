@@ -17,7 +17,7 @@ Open items are at the top. Everything you confirmed is listed under **Done** at 
   - Terms: cancellation and rescheduling policy, customer responsibilities, liability and insurance
 
 ### Decisions to confirm
-- [ ] **How distance is measured**: driving miles from the **center of Carrollton** (the base address "Carrollton, TX"), rounded to the nearest mile. 0 to 9 mi = $10, 10 to 20 mi = $20, over 20 mi = "contact us". If you meant miles from the Carrollton **city limits**, tell me; that needs a different calculation.
+- [ ] **Inside/Outside rule**: the map's city overrides the customer's button (your choice). Check a few addresses near the Carrollton city limits once the Google key is on.
 - [ ] **Free Carrollton rule**: an address gets $0 when the map service says its city is Carrollton. Check a few addresses near the city edges once the Google key is on.
 - [ ] **Service-area list**: it still names Denton, Frisco, and Lewisville. With the new 20-mile limit, some addresses in those cities, possibly most of Denton, may be over 20 driving miles from central Carrollton. I can't confirm the exact distances. Remove cities you can't reach in Admin → Business details.
 - [ ] **Words that trigger notes**: tires, paint, and chemicals add a "we'll confirm before pickup" line; concrete, dirt, and roofing add a "weight-based quote" line. Neither adds a price. These came from your first brief; your new list didn't mention them.
@@ -27,7 +27,7 @@ Open items are at the top. Everything you confirmed is listed under **Done** at 
 ### Hosting
 - [ ] **Admin password**: set `ADMIN_PASSWORD` on the server where the site runs. It is deliberately not saved in the code repository. An 8-digit number is weak for a page on the open internet. The admin page locks a visitor out for 15 minutes after 10 wrong passwords, but a longer password is safer.
 - [ ] `GOOGLE_MAPS_API_KEY` for driving distances. The code uses Google's Distance Matrix API. Google has been moving customers to its newer Routes API, so confirm Distance Matrix can be enabled on your Google Cloud project. Without a key, the site uses free OpenStreetMap servers, which are only suitable for testing.
-- [ ] Optional: Twilio (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`) to send "Text Me This Quote" automatically. Without it, the request is flagged on the lead and you text the customer yourself. US business texting generally requires A2P 10DLC registration first.
+- [ ] **Text service (Twilio)**: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`. This is what lets the site **text you at (469) 686-4690 every time someone books** (who, when, address, the job, and the estimate). It also sends "Text Me This Quote" to customers automatically. Without it, no texts go out, and bookings only show on your admin page. US business texting generally requires A2P 10DLC registration first. Twilio charges per message; check their current pricing.
 - [ ] Optional: `ANTHROPIC_API_KEY` for the AI answer check and summary.
 - [ ] Choose a host with a **persistent disk** for `DATA_DIR`, serve the site over HTTPS, set `TRUST_PROXY=1` if the app runs behind a proxy, and back up `DATA_DIR`.
 - [ ] Domain name, logo, and a Google Business Profile listing that points to the site.
@@ -35,7 +35,7 @@ Open items are at the top. Everything you confirmed is listed under **Done** at 
 ## Done (from the owner's answers)
 - Phone and text line: (469) 686-4690 (confirmed, same number)
 - Email: Helpcentre403@gmail.com
-- Base: Carrollton, TX. Distance fee: $0 in Carrollton, $10 for 0 to 9 mi, $20 for 10 to 20 mi, no service over 20 mi
+- Base: Carrollton, TX. Customers tap **Inside of Carrollton** (no distance fee) or **Outside of Carrollton** (flat $10, up to 20 driving miles; over 20 gets the contact-us message). When the map knows the city, the map decides and any mismatch is shown to the customer and flagged on the lead
 - Junk removal:
   - $100 minimum per job, applied to the whole job total
   - The trailer load is used only when no single items or cleanout are chosen

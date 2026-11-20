@@ -30,6 +30,17 @@ function hoursRows(schedule, holidayNote) {
   return rows.join('');
 }
 
+/** e.g. "No distance fee inside Carrollton. Outside Carrollton, the distance fee is $10 (up to 20 driving miles)." */
+function distanceSentence(settings) {
+  const d = settings.rates.distance;
+  const city = esc(settings.business.freeCities.join(', '));
+  const fees = d.bands.map((b) => (typeof b.fee === 'number' ? `$${b.fee}` : 'to be confirmed'));
+  const outside = d.bands.length === 1
+    ? `Outside ${city}, the distance fee is ${fees[0]} (up to ${d.maxServiceMiles} driving miles).`
+    : `Outside ${city}: ${d.bands.map((b, i) => `${esc(b.label)} ${fees[i]}`).join(', ')}.`;
+  return `No distance fee inside ${city}. ${outside}`;
+}
+
 function pageTokens(settings) {
   const b = settings.business;
   const c = settings.content;
@@ -46,6 +57,7 @@ function pageTokens(settings) {
     BASE_ADDRESS: esc(b.baseAddress),
     FREE_CITIES: esc(b.freeCities.join(', ')),
     MAX_MILES: esc(settings.rates.distance.maxServiceMiles),
+    DISTANCE_SENTENCE: distanceSentence(settings),
     CITY_LIST_HTML: cities.map((x) => `<li>${x}</li>`).join(''),
     CITY_SENTENCE: `${cities.join(', ')}, and nearby areas`,
     HOURS_HTML: hoursRows(settings.schedule, c.holidayNote),
@@ -73,6 +85,8 @@ function publicConfig(settings) {
     business: { name: settings.business.name, phone: settings.business.phone, textNumber: settings.business.textNumber },
     disclaimer: DISCLAIMER,
     maxServiceMiles: r.distance.maxServiceMiles,
+    freeCity: settings.business.freeCities[0] || '',
+    outsideFee: r.distance.bands.length === 1 && typeof r.distance.bands[0].fee === 'number' ? pricing.money(r.distance.bands[0].fee) : null,
     junk: {
       loads: map(r.junk.loads),
       items: map(r.junk.items),

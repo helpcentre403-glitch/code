@@ -42,7 +42,8 @@ Open http://localhost:3000. The admin panel is at http://localhost:3000/admin (u
 | `GOOGLE_MAPS_API_KEY` | Driving distance via Google Distance Matrix (recommended) |
 | `DISTANCE_PROVIDER` | `google`, `osrm` (free OpenStreetMap services, for testing), or `stub` |
 | `DISTANCE_STUB` | JSON table for `stub`, e.g. `{"plano":{"miles":14,"city":"Plano"}}` |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Optional automatic "Text Me This Quote" |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Text service. Needed for the owner's booking texts and for automatic "Text Me This Quote" |
+| `OWNER_NOTIFY_PHONE` | Where booking texts go (10 digits). Defaults to the business phone in admin, (469) 686-4690 |
 | `ANTHROPIC_API_KEY` | Optional AI answer check and summary (`ANTHROPIC_MODEL` overrides the model; default `claude-opus-5-5`, with server-side refusal fallback turned on) |
 | `TRUST_PROXY` | Set to `1` behind a proxy so rate limiting sees real client IPs |
 

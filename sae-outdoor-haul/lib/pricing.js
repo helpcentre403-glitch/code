@@ -103,6 +103,10 @@ function validate(service, body, settings) {
   if (!data.date || !data.time) ask('date', 'Pick a date and time on the calendar.');
   data.address = str(a.address, 300);
   if (data.address.length < 5) ask('address', 'Enter the service address (street, city, and ZIP) so we can measure the driving distance.');
+  data.cityZone = str(a.cityZone, 10);
+  if (!['inside', 'outside'].includes(data.cityZone)) {
+    ask('cityZone', `Tell us whether the address is inside or outside ${settings.business.freeCities[0] || 'the city'}.`);
+  }
 
   data.contact = { name: str(c.name, 100), phone: normalizePhone(c.phone), email: str(c.email, 200) || null };
   if (!data.contact.name) ask('contact.name', 'Enter your name.');
@@ -125,7 +129,7 @@ function distanceLine(rates, distance) {
   const price = fixed(band.fee);
   return {
     outOfArea: false,
-    line: { label: `${band.label} (about ${rounded} mi)`, price, status: price ? 'ok' : 'tbd' },
+    line: { label: d.bands.length === 1 ? band.label : `${band.label} (about ${rounded} mi)`, price, status: price ? 'ok' : 'tbd' },
   };
 }
 

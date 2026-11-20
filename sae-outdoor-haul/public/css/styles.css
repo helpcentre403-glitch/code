@@ -306,3 +306,8 @@ button, input, select, textarea { color: var(--ink); }
 .day-title { font-weight: 800; margin: 10px 0 6px; }
 .slot { white-space: nowrap; padding: 0 4px; }
 .btn-accent { color: var(--accent-ink); }
+/* Inside / Outside of Carrollton: two full-width cards */
+.zone-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.zone-group .chip span { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; border-radius: 12px; height: 100%; padding: 10px 14px; line-height: 1.25; }
+.zone-group .chip small { font-size: .85rem; }
+@media (max-width: 360px) { .zone-group { grid-template-columns: 1fr; } }

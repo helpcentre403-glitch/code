@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { startServer, pricedSettings, contact } = require('./helpers');
 
-const junkAnswers = (o = {}) => ({ whatToGo: 'old couch, 6 boxes, treadmill', load: 'half', locations: ['ground'], items: [], date: '2026-12-08', time: '18:00', address: '100 Main St, Plano, TX', ...o });
+const junkAnswers = (o = {}) => ({ whatToGo: 'old couch, 6 boxes, treadmill', load: 'half', locations: ['ground'], items: [], date: '2026-12-08', time: '18:00', address: '100 Main St, Plano, TX', cityZone: 'outside', ...o });
 
 test('pages render with phone + Text Us in header and footer on every page', async () => {
   const s = await startServer();
@@ -45,9 +45,9 @@ test('junk estimate end to end: breakdown, distance band, lead saved, book, slot
     const r = await s.post('/api/estimate', { service: 'junk', answers: junkAnswers({ locations: ['elevated'] }), contact });
     assert.equal(r.json.status, 'ok', JSON.stringify(r.json));
     const e = r.json.estimate;
-    assert.equal(e.totalDisplay, '$295 to $345'); // 250 + elevated 25-75 + 10-20 mi band $20
+    assert.equal(e.totalDisplay, '$285 to $335'); // 250 + elevated 25-75 + outside-Carrollton fee $10
     assert.deepEqual(e.sections.map((x) => x.title), ['Base price', 'Extras', 'Distance fee']);
-    assert.match(e.sections[2].lines[0].label, /10 to 20 miles \(about 15 mi\)/);
+    assert.equal(e.sections[2].lines[0].label, 'Outside Carrollton');
     assert.equal(r.json.disclaimer, 'This is an estimate. Our crew confirms the final price before work starts.');
 
     const leads = (await s.admin('GET', '/api/admin/leads')).json.leads;
@@ -76,6 +76,25 @@ test('junk estimate end to end: breakdown, distance band, lead saved, book, slot
   } finally { await s.close(); }
 });
 
+test('booking texts the owner who booked, when, and what the job is', async () => {
+  const sent = [];
+  const sms = { send: async (to, body) => { sent.push({ to, body }); return true; } };
+  const s = await startServer({ settings: pricedSettings(), sms });
+  try {
+    const r = await s.post('/api/estimate', { service: 'junk', answers: junkAnswers({ items: [{ key: 'couch', qty: 2 }], special: 'gate code 1234' }), contact });
+    assert.equal(sent.length, 0, 'no owner text for a quote alone');
+    assert.equal((await s.post(`/api/leads/${r.json.leadId}/book`, {})).json.status, 'ok');
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0].to, '4696864690');
+    const body = sent[0].body;
+    for (const part of ['NEW BOOKING: Junk removal', 'Tue, Dec 8 at 6:00 PM', 'Test Customer, (214) 555-0100', 'Address: 100 Main St, Plano, TX', 'old couch, 6 boxes, treadmill', 'Couch x2', 'gate code 1234', 'Estimate: $210 to $310']) {
+      assert.ok(body.includes(part), `missing "${part}" in:\n${body}`);
+    }
+    const lead = (await s.admin('GET', '/api/admin/leads')).json.leads[0];
+    assert.equal(lead.ownerTexted, true);
+  } finally { await s.close(); }
+});
+
 test('book race: slot taken between estimate and booking returns 409', async () => {
   const s = await startServer({ settings: pricedSettings() });
   try {
@@ -87,26 +106,36 @@ test('book race: slot taken between estimate and booking returns 409', async () 
   } finally { await s.close(); }
 });
 
-test('distance bands through the API, Carrollton free, over 20 miles = contact us', async () => {
+test('inside/outside Carrollton buttons: $0 inside, flat $10 outside, map wins, over 20 miles = contact us', async () => {
   const s = await startServer({ settings: pricedSettings() });
   try {
-    const fee = async (address) => {
-      const r = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-12', time: '10:00', address }, contact });
+    const fee = async (address, zone = 'outside') => {
+      const r = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-12', time: '10:00', address, cityZone: zone }, contact });
       return r.json;
     };
     const distLine = (j) => j.estimate.sections.find((x) => x.title === 'Distance fee').lines[0];
     assert.equal(distLine(await fee('5 Elm St, Carrollton, TX 75006')).display, 'No fee');
-    // Map service gave no city: a misspelled "Carrolton" in the address still counts as Carrollton
-    assert.equal(distLine(await fee('2 nocity Rd, Carrolton TX')).display, 'No fee');
-    assert.equal(distLine(await fee('2 nocity Rd, Carollton TX')).display, 'No fee');
-    assert.equal(distLine(await fee('2 nocity Rd, Dallas TX')).display, '$10');
+    // Map service gave no city: the customer's button decides
+    assert.equal(distLine(await fee('2 nocity Rd', 'inside')).display, 'No fee');
+    assert.equal(distLine(await fee('2 nocity Rd', 'outside')).display, '$10');
+    // Map disagrees with the button: the map wins and the customer is told why
+    const wrongInside = await fee('Plano TX', 'inside');
+    assert.equal(distLine(wrongInside).display, '$10');
+    assert.match(wrongInside.estimate.notes[0], /You picked inside of Carrollton, but the map places this address in Plano/);
+    const wrongOutside = await fee('5 Elm St, Carrollton, TX 75006', 'outside');
+    assert.equal(distLine(wrongOutside).display, 'No fee');
+    assert.match(wrongOutside.estimate.notes[0], /You picked outside of Carrollton/);
+    // Missing choice is asked for
+    const noZone = await fee('Plano TX', '');
+    assert.equal(noZone.status, 'needs_info');
+    assert.equal(noZone.questions[0].field, 'cityZone');
     assert.match(distLine(await fee('5 Elm St, Carrollton, TX 75006')).label, /Carrollton address: no distance fee/);
     assert.equal(distLine(await fee('1 Belt Line Rd, Addison')).display, '$10');
     assert.equal(distLine(await fee('nine road')).display, '$10');
-    assert.equal(distLine(await fee('tenish road')).display, '$20');
-    assert.equal(distLine(await fee('Plano TX')).display, '$20');
-    assert.equal(distLine(await fee('Irving TX')).display, '$20');
-    assert.equal(distLine(await fee('Garland TX')).display, '$20');
+    assert.equal(distLine(await fee('tenish road')).display, '$10');
+    assert.equal(distLine(await fee('Plano TX')).display, '$10');
+    assert.equal(distLine(await fee('Irving TX')).display, '$10');
+    assert.equal(distLine(await fee('Garland TX')).display, '$10');
     assert.equal((await fee('justover road')).status, 'out_of_area');
     assert.equal((await fee('Denton TX')).status, 'out_of_area');
     const far = await fee('Downtown FortWorth TX');
@@ -126,16 +155,16 @@ test('trees and landscaping totals; zero trees rejected', async () => {
   try {
     const t = await s.post('/api/estimate', {
       service: 'trees',
-      answers: { count: 3, trees: [{ size: 'small', service: 'delivery' }, { size: 'medium', service: 'installation' }, { size: 'large', service: 'both' }], date: '2026-12-12', time: '11:00', address: 'Plano TX' },
+      answers: { count: 3, trees: [{ size: 'small', service: 'delivery' }, { size: 'medium', service: 'installation' }, { size: 'large', service: 'both' }], date: '2026-12-12', time: '11:00', address: 'Plano TX', cityZone: 'outside' },
       contact,
     });
     assert.equal(t.json.status, 'ok');
-    assert.equal(t.json.estimate.totalDisplay, `$${(60 + 35) + (80 + 40) + (100 + 115) + 20}`);
-    const zero = await s.post('/api/estimate', { service: 'trees', answers: { count: 0, trees: [], date: '2026-12-12', time: '11:00', address: 'Plano TX' }, contact });
+    assert.equal(t.json.estimate.totalDisplay, `$${(60 + 35) + (80 + 40) + (100 + 115) + 10}`);
+    const zero = await s.post('/api/estimate', { service: 'trees', answers: { count: 0, trees: [], date: '2026-12-12', time: '11:00', address: 'Plano TX', cityZone: 'outside' }, contact });
     assert.equal(zero.json.status, 'needs_info');
     assert.equal(zero.json.questions[0].field, 'count');
-    const l = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'back', size: 'large', date: '2026-12-12', time: '12:00', address: 'Irving TX' }, contact });
-    assert.equal(l.json.estimate.totalDisplay, '$75');
+    const l = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'back', size: 'large', date: '2026-12-12', time: '12:00', address: 'Irving TX', cityZone: 'outside' }, contact });
+    assert.equal(l.json.estimate.totalDisplay, '$65');
   } finally { await s.close(); }
 });
 
@@ -148,8 +177,8 @@ test('same-day junk adds the same-day fee; long carry (still TODO) shows "To be 
     assert.equal(secs.at(-1).title, 'Same-day fee');
     assert.equal(secs.at(-1).lines[0].display, '$40');
     assert.equal(secs.find((x) => x.title === 'Extras').lines[0].display, 'To be confirmed');
-    assert.equal(secs.find((x) => x.title === 'Distance fee').lines[0].display, '$20');
-    assert.equal(r.json.estimate.totalDisplay, '$310'); // 250 + $20 distance + $40 same-day; long carry excluded, not guessed
+    assert.equal(secs.find((x) => x.title === 'Distance fee').lines[0].display, '$10');
+    assert.equal(r.json.estimate.totalDisplay, '$300'); // 250 + $10 distance + $40 same-day; long carry excluded, not guessed
     assert.ok(r.json.estimate.notes.some((n) => /not included/.test(n)));
   } finally { await s.close(); }
 });
@@ -180,7 +209,7 @@ test('AI step: questions are asked first; invented prices are dropped from the s
     assert.equal(r2.json.status, 'ok');
     mode = 'bad-summary';
     const r3 = await s.post('/api/estimate', { service: 'junk', answers: junkAnswers({ time: '19:00' }), contact });
-    assert.match(r3.json.summary, /^Your junk removal estimate is \$270\./);
+    assert.match(r3.json.summary, /^Your junk removal estimate is \$260\./);
   } finally { await s.close(); }
 });
 
@@ -238,7 +267,7 @@ test('admin: auth required; edit hours, block/open dates and slots, holidays sho
     assert.deepEqual(await slots('2026-12-14'), ['16:00', '17:00', '18:00', '19:00']);
 
     // Blocked slot cannot be booked via the API
-    const r = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-09', time: '17:00', address: 'Plano' }, contact });
+    const r = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-09', time: '17:00', address: 'Plano', cityZone: 'outside' }, contact });
     assert.equal(r.json.status, 'needs_info');
   } finally { await s.close(); }
 });
@@ -248,9 +277,9 @@ test('admin rate edits flow straight into estimates', async () => {
   try {
     const settings = (await s.admin('GET', '/api/admin/settings')).json;
     settings.rates.landscaping.front.small.price = { min: 32, max: 32, plus: false };
-    settings.rates.distance.bands[1].fee = 15;
+    settings.rates.distance.bands[0].fee = 15;
     await s.admin('PUT', '/api/admin/settings', settings);
-    const r = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-12', time: '10:00', address: 'Plano' }, contact });
+    const r = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-12', time: '10:00', address: 'Plano', cityZone: 'outside' }, contact });
     assert.equal(r.json.estimate.totalDisplay, '$47');
     const cfg = (await s.get('/api/config')).json;
     assert.equal(cfg.landscaping.front[0].price, '$32');

@@ -12,14 +12,13 @@ const { pricedSettings, FIXED_NOW } = require('./helpers');
 const range = (p) => [p.min, p.max];
 const dist = (miles, city = 'Plano', free = false) => ({ miles, city, free });
 
-test('distance bands (owner rates): $10 for 0-9 mi, $20 for 10-20 mi, nothing past 20, Carrollton free', () => {
+test('distance (owner rates): flat $10 outside Carrollton up to 20 mi, nothing past 20, Carrollton free', () => {
   const r = pricedSettings().rates;
   const fee = (miles) => pricing.distanceLine(r, dist(miles)).line.price.min;
   assert.equal(fee(0), 10);
-  assert.equal(fee(9.4), 10);
-  assert.equal(fee(9.6), 20); // rounds to 10
-  assert.equal(fee(15), 20);
-  assert.equal(fee(20.4), 20);
+  assert.equal(fee(9.6), 10);
+  assert.equal(fee(15), 10);
+  assert.equal(fee(20.4), 10); // rounds to 20
   assert.equal(pricing.distanceLine(r, dist(20.6)).outOfArea, true);
   assert.equal(pricing.distanceLine(r, dist(25)).outOfArea, true);
   const free = pricing.distanceLine(r, dist(3, 'Carrollton', true)).line;
@@ -29,7 +28,7 @@ test('distance bands (owner rates): $10 for 0-9 mi, $20 for 10-20 mi, nothing pa
 
 test('distance fee not set yet (TODO) shows "to be confirmed", never a made-up number', () => {
   const r = defaultSettings().rates;
-  r.distance.bands[1].fee = null;
+  r.distance.bands[0].fee = null;
   const l = pricing.distanceLine(r, dist(12)).line;
   assert.equal(l.status, 'tbd');
   assert.equal(l.price, null);
@@ -43,7 +42,7 @@ test('junk: load + extras + distance + same-day', () => {
   const s = pricedSettings();
   const e = pricing.computeEstimate(junk({ locations: ['elevated', 'longCarry'], disassembly: true }), s, dist(14.8), { isSameDay: true });
   // base 450-550, elevated 25-75, long carry 30, disassembly 25-100, distance 20, same-day 40
-  assert.deepEqual(range(e.total), [450 + 25 + 30 + 25 + 20 + 40, 550 + 75 + 30 + 100 + 20 + 40]);
+  assert.deepEqual(range(e.total), [450 + 25 + 30 + 25 + 10 + 40, 550 + 75 + 30 + 100 + 10 + 40]);
   assert.deepEqual(e.sections.map((x) => x.title), ['Base price', 'Extras', 'Distance fee', 'Same-day fee']);
   assert.equal(e.hasUnpriced, false);
 });
@@ -55,12 +54,12 @@ test('junk: items and cleanout priced; $100 minimum applies to the whole job', (
   const e2 = pricing.computeEstimate(junk({ load: null, items: [{ key: 'recliner', qty: 1 }] }), s, dist(3, 'Carrollton', true));
   assert.deepEqual(range(e2.total), [100, 100]);
   assert.ok(e2.sections[0].lines.some((l) => /\$100 minimum per junk job/.test(l.label)));
-  // recliner 65-90 + $20 distance = 85-110 -> raised to 100-110
+  // recliner 65-90 + $10 distance = 75-100 -> raised to 100-100
   const e3 = pricing.computeEstimate(junk({ load: null, items: [{ key: 'recliner', qty: 1 }] }), s, dist(15));
-  assert.deepEqual(range(e3.total), [100, 110]);
+  assert.deepEqual(range(e3.total), [100, 100]);
   // no adjustment when the job is already over $100
   const e4 = pricing.computeEstimate(junk({ load: 'quarter' }), s, dist(15));
-  assert.deepEqual(range(e4.total), [170, 170]);
+  assert.deepEqual(range(e4.total), [160, 160]);
   assert.ok(!e4.sections[0].lines.some((l) => l.status === 'info'));
 });
 
@@ -88,7 +87,7 @@ test('junk: same-day fee only when same day', () => {
 
 test('landscaping: visit price + distance', () => {
   const e = pricing.computeEstimate({ service: 'landscaping', area: 'both', size: 'large' }, pricedSettings(), dist(20.4));
-  assert.deepEqual(range(e.total), [75 + 20, 75 + 20]);
+  assert.deepEqual(range(e.total), [75 + 10, 75 + 10]);
   const e2 = pricing.computeEstimate({ service: 'landscaping', area: 'front', size: 'medium' }, pricedSettings(), dist(3, 'Carrollton', true));
   assert.deepEqual(range(e2.total), [35, 35]);
 });
@@ -111,7 +110,7 @@ test('trees: (tree price + service fee) per tree + distance', () => {
 test('validation asks instead of guessing', () => {
   const s = defaultSettings();
   const v = (service, answers, c = { name: 'A', phone: '2145550100' }) => pricing.validate(service, { answers, contact: c }, s).errors.map((e) => e.field);
-  const base = { date: '2026-12-07', time: '17:00', address: '1 Main St, Plano TX' };
+  const base = { date: '2026-12-07', time: '17:00', address: '1 Main St, Plano TX', cityZone: 'outside' };
   assert.ok(v('junk', { ...base, whatToGo: '', load: 'full', locations: ['ground'] }).includes('whatToGo'));
   assert.ok(v('junk', { ...base, whatToGo: 'stuff', load: 'full', locations: ['ground'] }).includes('whatToGo'));
   assert.ok(v('junk', { ...base, whatToGo: 'couch', locations: ['ground'] }).includes('load'));
@@ -122,6 +121,7 @@ test('validation asks instead of guessing', () => {
   assert.ok(v('trees', { ...base, count: 1, trees: [{ size: 'small' }] }).includes('trees.0.service'));
   assert.ok(v('landscaping', { ...base, area: 'side', size: 'small' }).includes('area'));
   assert.ok(v('landscaping', { area: 'front', size: 'small' }).includes('address'));
+  assert.ok(v('landscaping', { ...base, cityZone: '', area: 'front', size: 'small' }).includes('cityZone'));
   assert.ok(v('landscaping', { ...base, area: 'front', size: 'small' }, { name: 'A', phone: '555' }).includes('contact.phone'));
   assert.equal(pricing.normalizePhone('+1 (469) 686-4690'), '4696864690');
 });

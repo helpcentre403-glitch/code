@@ -88,8 +88,8 @@ function defaultSettings() {
       distance: {
         // Driving miles from the base address, rounded to the nearest whole mile.
         bands: [
-          { label: '0 to 9 miles', maxMiles: 9, fee: 10 }, // owner
-          { label: '10 to 20 miles', maxMiles: 20, fee: 20 }, // owner
+          // Owner: flat $10 for any address outside Carrollton, up to 20 driving miles.
+          { label: 'Outside Carrollton', maxMiles: 20, fee: 10 },
         ],
         maxServiceMiles: 20, // owner: no travel past 20 miles
       },

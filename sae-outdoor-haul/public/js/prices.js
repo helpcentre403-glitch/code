@@ -53,8 +53,14 @@
       + '<fieldset class="step"><legend><span class="num">' + (n + 1) + '</span> Address</legend>'
       + '<label class="label" for="' + id + '-address">Service address (street, city, ZIP)</label>'
       + '<input id="' + id + '-address" name="address" autocomplete="street-address" maxlength="300" placeholder="123 Main St, Carrollton, TX 75006">'
-      + '<p class="hint">We use this to measure the driving distance fee. Homes in Carrollton pay no distance fee.</p>'
-      + '<p class="field-error" data-error="address"></p></fieldset>'
+      + '<p class="field-error" data-error="address"></p>'
+      + '<p class="label">Is this address inside or outside ' + config.freeCity + '?</p>'
+      + '<div class="chip-group zone-group" role="radiogroup" aria-label="Inside or outside ' + config.freeCity + '">'
+      + '<label class="chip"><input type="radio" name="cityZone" value="inside"><span>Inside of ' + config.freeCity + ' <small>no distance fee</small></span></label>'
+      + '<label class="chip"><input type="radio" name="cityZone" value="outside"><span>Outside of ' + config.freeCity + ' <small>' + (config.outsideFee ? config.outsideFee + ' distance fee' : 'distance fee') + '</small></span></label>'
+      + '</div>'
+      + '<p class="hint">We serve up to ' + config.maxServiceMiles + ' driving miles away and check the address on the map.</p>'
+      + '<p class="field-error" data-error="cityZone"></p></fieldset>'
       + '<fieldset class="step"><legend><span class="num">' + (n + 2) + '</span> Your contact info</legend>'
       + '<label class="label" for="' + id + '-name">Name</label>'
       + '<input id="' + id + '-name" name="name" autocomplete="name" maxlength="100">'
@@ -305,6 +311,8 @@
     a.date = form.querySelector('input[name="date"]').value;
     a.time = form.querySelector('input[name="time"]').value;
     a.address = form.querySelector('input[name="address"]').value;
+    var zone = form.querySelector('input[name="cityZone"]:checked');
+    a.cityZone = zone ? zone.value : '';
     var body = {
       service: service, answers: a,
       contact: { name: form.querySelector('input[name="name"]').value, phone: form.querySelector('input[name="phone"]').value, email: form.querySelector('input[name="email"]').value },

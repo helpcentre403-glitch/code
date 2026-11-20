@@ -60,7 +60,7 @@ function createApp(opts = {}) {
   app.use(express.json({ limit: '50kb' }));
   app.use('/assets', express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 
-  const api = createApi({ store, distance, ai, sms, now, log, defaults: defaultSettings });
+  const api = createApi({ store, distance, ai, sms, now, log, defaults: defaultSettings, notifyPhone: process.env.OWNER_NOTIFY_PHONE || null });
   const send = (res, r) => res.status(r.status).json(r.json);
 
   // ---------- Admin auth (HTTP Basic, user "admin") ----------
@@ -100,7 +100,9 @@ function createApp(opts = {}) {
   app.post('/api/leads/:id/text', async (req, res, next) => {
     try { send(res, await api.textQuote(req.params.id)); } catch (e) { next(e); }
   });
-  app.post('/api/leads/:id/book', (req, res) => send(res, api.book(req.params.id)));
+  app.post('/api/leads/:id/book', async (req, res, next) => {
+    try { send(res, await api.book(req.params.id)); } catch (e) { next(e); }
+  });
 
   // ---------- Admin API ----------
   app.use('/api/admin', requireAdmin, noStore);

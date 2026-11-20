@@ -25,6 +25,9 @@ async function noHorizontalScroll(page) {
   assert.ok(w[0] <= w[1], `page scrolls sideways: ${w}`);
 }
 async function fillContact(section, name = 'Pat Test') {
+  const address = await section.locator('input[name="address"]').inputValue();
+  const zone = /carrollton/i.test(address) ? 'Inside of Carrollton' : 'Outside of Carrollton';
+  await section.locator('.zone-group .chip', { hasText: zone }).click();
   await section.locator('input[name="name"]').fill(name);
   await section.locator('input[name="phone"]').fill('214-555-0100');
 }
@@ -88,8 +91,8 @@ test('junk removal: full flow -> estimate breakdown -> Book This Date -> thank y
   const est = page.locator('[data-result="junk"] .estimate');
   await est.waitFor();
   // A single item was added, so it is priced instead of the full load:
-  // mattress 75-110 + elevated 25-75 + long carry 30 + Plano $20
-  assert.equal(await est.locator('.total').innerText(), '$150 to $235');
+  // mattress 75-110 + elevated 25-75 + long carry 30 + outside-Carrollton $10
+  assert.equal(await est.locator('.total').innerText(), '$140 to $225');
   assert.ok((await est.innerText()).includes('instead of the trailer load'));
   const text = await est.innerText();
   for (const s of ['Base price', 'Extras', 'Distance fee', 'This is an estimate. Our crew confirms the final price before work starts.']) assert.ok(text.includes(s), s);
