@@ -87,6 +87,7 @@ function customerText(lead, settings) {
       + (dist ? `, distance ${dist.lines.every((l) => l.free) ? 'no fee' : money0(dist.subtotal)})` : base ? ')' : ''),
     'Final price confirmed before work starts.',
     phone ? `Questions? Call/text ${phone}` : '',
+    'Reply STOP to opt out.',
   ];
   return parts.filter(Boolean).join('\n');
 }
