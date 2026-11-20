@@ -236,6 +236,14 @@
     field('FAQ: How do I pay? (blank = TODO)', function () { return c.paymentMethods || ''; }, function (v) { c.paymentMethods = v.trim() || null; }, { area: true });
   }
 
+  document.querySelector('[data-test-email]').addEventListener('click', function () {
+    var out = document.querySelector('[data-test-email-result]');
+    out.textContent = 'Sending...';
+    api('POST', '/api/admin/test-email', {})
+      .then(function (r) { out.textContent = r.message; out.style.color = r.status === 'ok' ? 'var(--good)' : 'var(--bad)'; })
+      .catch(function (e) { out.textContent = (e && e.message) || 'Could not reach the server.'; out.style.color = 'var(--bad)'; });
+  });
+
   function save() {
     return api('PUT', '/api/admin/settings', S)
       .then(function (r) { S = r.settings; say('Saved. The live site now uses these settings.'); renderAll(); return loadCalendar(); })

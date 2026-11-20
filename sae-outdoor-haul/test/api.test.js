@@ -352,3 +352,25 @@ test('Meta Pixel: off by default, on when an ID is saved in admin, bad IDs rejec
     assert.match(res.headers.get('content-security-policy'), /script-src 'self' https:\/\/connect\.facebook\.net/);
   } finally { await s.close(); }
 });
+
+test('admin Send test email reports success and the real reason for failures', async () => {
+  const bad = await startServer({ mailer: { send: async () => { throw new Error('Invalid login: 535-5.7.8 Username and Password not accepted'); } } });
+  try {
+    const r = (await bad.admin('POST', '/api/admin/test-email', {})).json;
+    assert.equal(r.status, 'error');
+    assert.match(r.message, /535/);
+    assert.match(r.message, /16-character app password/);
+  } finally { await bad.close(); }
+  const none = await startServer();
+  try {
+    assert.match((await none.admin('POST', '/api/admin/test-email', {})).json.message, /GMAIL_USER and GMAIL_APP_PASSWORD/);
+    assert.equal((await none.post('/api/admin/test-email', {})).status, 401);
+  } finally { await none.close(); }
+  const sent = [];
+  const good = await startServer({ mailer: { send: async (to, sub) => { sent.push({ to, sub }); return true; } } });
+  try {
+    const r = (await good.admin('POST', '/api/admin/test-email', {})).json;
+    assert.equal(r.status, 'ok');
+    assert.deepEqual(sent, [{ to: 'Helpcentre403@gmail.com', sub: 'Test email from your website' }]);
+  } finally { await good.close(); }
+});

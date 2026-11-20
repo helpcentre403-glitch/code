@@ -118,6 +118,9 @@ function createApp(opts = {}) {
   app.get('/api/admin/calendar', (req, res) => send(res, api.calendar(req.query)));
   app.post('/api/admin/calendar', (req, res) => send(res, api.calendarAction(req.body)));
   app.get('/api/admin/leads', (req, res) => send(res, api.leads()));
+  app.post('/api/admin/test-email', async (req, res, next) => {
+    try { send(res, await api.testEmail()); } catch (e) { next(e); }
+  });
   app.patch('/api/admin/leads/:id', (req, res) => send(res, api.patchLead(req.params.id, req.body)));
 
   app.use((err, req, res, _next) => {

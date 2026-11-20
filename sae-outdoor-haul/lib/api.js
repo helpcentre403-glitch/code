@@ -74,7 +74,11 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
   async function emailOwner(subject, body) {
     const to = notifyEmail || store.getSettings().business.email;
     if (!mailer || !to) return false;
-    try { return await mailer.send(to, subject, body); } catch (e) { log.error('Owner email failed:', e.message); return false; }
+    try {
+      const okSent = await mailer.send(to, subject, body);
+      if (log.log) log.log(`Owner email sent to ${to}: ${subject}`);
+      return okSent;
+    } catch (e) { log.error('Owner email failed:', e.message); return false; }
   }
 
   const bookedKeys = () => new Set(
@@ -215,6 +219,25 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
 
     // ---------- Admin ----------
     getSettings: () => ok(store.getSettings()),
+
+    /** Admin "Send test email": reports exactly why email is not working. */
+    async testEmail() {
+      const to = notifyEmail || store.getSettings().business.email;
+      if (!mailer) {
+        return ok({ status: 'error', message: 'Email is not set up on the server. On Render, add GMAIL_USER and GMAIL_APP_PASSWORD under Environment, then save.' });
+      }
+      if (!to) return ok({ status: 'error', message: 'No business email is set. Add one under Business details.' });
+      try {
+        await mailer.send(to, 'Test email from your website', `This is a test from your SAE Outdoor and Haul website.\nIf you can read this, booking emails will reach ${to}.`);
+        return ok({ status: 'ok', message: `Sent to ${to}. Check Inbox, Spam, and Sent (Gmail sometimes files emails you send to yourself under Sent).` });
+      } catch (e) {
+        const raw = String(e && e.message || e);
+        let hint = '';
+        if (/535|Username and Password not accepted|Invalid login|BadCredentials/i.test(raw)) hint = 'Gmail rejected the login. GMAIL_APP_PASSWORD must be the 16-character app password (not your normal password), and GMAIL_USER must be the same Gmail address.';
+        else if (/ETIMEDOUT|ECONNREFUSED|ENETUNREACH|timeout/i.test(raw)) hint = 'The server could not reach Gmail. Check that the Render service is on a paid plan (free plans block email).';
+        return ok({ status: 'error', message: `Sending failed: ${raw.slice(0, 300)}${hint ? ` ${hint}` : ''}` });
+      }
+    },
 
     putSettings(body) {
       const problems = validateSettings(body);
