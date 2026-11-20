@@ -81,7 +81,7 @@ test('booking texts the owner who booked, when, and what the job is', async () =
   const sms = { send: async (to, body) => { sent.push({ to, body }); return true; } };
   const s = await startServer({ settings: pricedSettings(), sms });
   try {
-    const r = await s.post('/api/estimate', { service: 'junk', answers: junkAnswers({ items: [{ key: 'couch', qty: 2 }], special: 'gate code 1234' }), contact });
+    const r = await s.post('/api/estimate', { service: 'junk', answers: junkAnswers({ items: [{ key: 'couch', qty: 2 }], special: 'gate code 1234' }), contact: { ...contact, smsConsent: true } });
     assert.equal(sent.length, 0, 'no owner text for a quote alone');
     assert.equal((await s.post(`/api/leads/${r.json.leadId}/book`, {})).json.status, 'ok');
     assert.equal(sent.length, 2, 'one text to the owner, one to the customer');
@@ -422,7 +422,8 @@ test('Book This Date: customer gets a text + email receipt, owner email says whe
   const s = await startServer({ settings: pricedSettings(), sms, mailer });
   try {
     assert.equal((await s.get('/api/config')).json.autoText, true);
-    const r = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-12', time: '10:00', address: '5 Elm St, Carrollton, TX', cityZone: 'inside' }, contact: { ...contact, email: 'pat@example.com' } });
+    const r = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-12', time: '10:00', address: '5 Elm St, Carrollton, TX', cityZone: 'inside' }, contact: { ...contact, email: 'pat@example.com', smsConsent: true } });
+    assert.equal(r.json.smsConsent, true);
     await s.post(`/api/leads/${r.json.leadId}/book`, {});
     const cust = texts.find((t) => t.to === '2145550100');
     assert.ok(cust, 'customer texted');
@@ -446,9 +447,46 @@ test('Book This Date without a text service: owner email says to text the custom
   const s = await startServer({ settings: pricedSettings(), mailer });
   try {
     assert.equal((await s.get('/api/config')).json.autoText, false);
-    const r = await s.post('/api/estimate', { service: 'junk', answers: { whatToGo: 'old couch', load: 'half', locations: ['ground'], items: [], date: '2026-12-08', time: '18:00', address: '100 Main St, Plano, TX', cityZone: 'outside' }, contact });
+    const r = await s.post('/api/estimate', { service: 'junk', answers: { whatToGo: 'old couch', load: 'half', locations: ['ground'], items: [], date: '2026-12-08', time: '18:00', address: '100 Main St, Plano, TX', cityZone: 'outside' }, contact: { ...contact, smsConsent: true } });
     await s.post(`/api/leads/${r.json.leadId}/book`, {});
     assert.equal(mails.length, 1, 'no customer email (none given), one owner email');
     assert.match(mails[0].text, />>> TEXT THIS CUSTOMER: they were NOT texted automatically .* Text \(214\) 555-0100 to confirm/);
+  } finally { await s.close(); }
+});
+
+test('customers who did not check the text box are never texted; consent is recorded with time and wording', async () => {
+  const texts = []; const mails = [];
+  const sms = { send: async (to, body) => { texts.push({ to, body }); return true; } };
+  const mailer = { send: async (to, subject, text) => { mails.push({ to, subject, text }); return true; } };
+  const s = await startServer({ settings: pricedSettings(), sms, mailer });
+  try {
+    const r = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-12', time: '11:00', address: '5 Elm St, Carrollton, TX', cityZone: 'inside' }, contact });
+    await s.post(`/api/leads/${r.json.leadId}/book`, {});
+    assert.ok(!texts.some((t) => t.to === '2145550100'), 'no text without consent');
+    assert.match(mails.find((m) => m.to === 'Helpcentre403@gmail.com').text, /did not check the box for automatic texts/);
+    const r2 = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'front', size: 'small', date: '2026-12-12', time: '12:00', address: '5 Elm St, Carrollton, TX', cityZone: 'inside' }, contact: { ...contact, smsConsent: true } });
+    const lead = (await s.admin('GET', '/api/admin/leads')).json.leads.find((l) => l.id === r2.json.leadId);
+    assert.equal(lead.contact.smsConsent, true);
+    assert.equal(lead.contact.smsConsentAt, '2026-12-07T18:00:00.000Z');
+    assert.match(lead.contact.smsConsentText, /Message and data rates may apply/);
+  } finally { await s.close(); }
+});
+
+test('Privacy Policy and Terms of Service contain the wording Twilio asks for', async () => {
+  const s = await startServer();
+  try {
+    const privacy = (await s.get('/privacy')).text;
+    assert.match(privacy, /<title>Privacy Policy \| SAE Outdoor and Haul<\/title>/);
+    assert.match(privacy, /<h1>Privacy Policy<\/h1>/);
+    assert.ok(privacy.includes('We do not sell or share your SMS opt-in data or personal information with third parties for marketing purposes.'));
+    assert.ok(privacy.includes('SAE Outdoor and Haul'));
+    const terms = (await s.get('/terms')).text;
+    assert.match(terms, /<h1>Terms of Service<\/h1>/);
+    assert.match(terms, /<h2 id="sms">SMS Terms<\/h2>/);
+    assert.ok(terms.includes('Message and data rates may apply.'));
+    assert.match(terms, /reply STOP/i);
+    assert.match(terms, /HELP/);
+    assert.ok(terms.includes('SAE Outdoor and Haul'));
+    for (const page of [privacy, terms]) assert.ok(!/\[TODO/.test(page), 'no TODO placeholders on legal pages');
   } finally { await s.close(); }
 });

@@ -99,6 +99,7 @@ test('junk removal: full flow -> estimate breakdown -> Book This Date -> thank y
   assert.ok(!text.includes('Same-day fee'));
   assert.equal(await est.locator('button').count(), 1, 'one button only');
   assert.match(await est.locator('.book-btn').innerText(), /Book This Date\s+We'll text you to confirm/);
+  assert.equal(await sec.locator('input[name="smsConsent"]').isChecked(), false, 'text consent box starts unchecked');
   await est.locator('.book-btn').click();
   await page.waitForURL(/thank-you/);
   assert.match(await page.locator('h1').innerText(), /Got it\. We.ll text you to confirm\./);

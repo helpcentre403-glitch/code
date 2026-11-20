@@ -193,12 +193,16 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
       }
       summary = summary || pricing.templateSummary(data, estimate, settings);
 
+      if (data.contact.smsConsent) {
+        data.contact.smsConsentAt = now().toISOString();
+        data.contact.smsConsentText = 'Text me my booking confirmation, estimate receipt, and appointment updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Not required to book.';
+      }
       const lead = store.addLead({
         service, answers: data, contact: data.contact, distance: distanceInfo, sameDay: isSameDay, zoneMismatch,
         addressUnverified: distanceInfo.unverified,
         estimate, summary, aiQuestions, booking: { date: data.date, time: data.time, status: 'requested' },
       });
-      return ok({ status: 'ok', leadId: lead.id, estimate: decorate(estimate), summary, disclaimer: DISCLAIMER, date: data.date, time: data.time, dateLabel: `${cal.formatDate(data.date)}, ${cal.formatTime(data.time)}` });
+      return ok({ status: 'ok', leadId: lead.id, smsConsent: data.contact.smsConsent, estimate: decorate(estimate), summary, disclaimer: DISCLAIMER, date: data.date, time: data.time, dateLabel: `${cal.formatDate(data.date)}, ${cal.formatTime(data.time)}` });
     },
 
     async textQuote(id) {
@@ -236,7 +240,7 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
       // Confirm to the customer right away: text (needs a text service), and email if they gave one.
       let customerTexted = false;
       let customerEmailed = false;
-      if (sms && booked.contact.phone) {
+      if (sms && booked.contact.phone && booked.contact.smsConsent) {
         try { customerTexted = await sms.send(booked.contact.phone, customerText(booked, s2).slice(0, 600)); } catch (e) { log.error('Customer confirmation text failed:', e.message); }
       }
       if (mailer && booked.contact.email) {
@@ -246,9 +250,10 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
       }
       const p = booked.contact.phone || '';
       const customerPhone = p.length === 10 ? `(${p.slice(0, 3)}) ${p.slice(3, 6)}-${p.slice(6)}` : p;
-      const status = customerTexted
-        ? 'The customer was texted their confirmation and estimate.'
-        : `>>> TEXT THIS CUSTOMER: they were NOT texted automatically (no text service is set up). Text ${customerPhone} to confirm. <<<${customerEmailed ? ' (They were emailed a copy.)' : ''}`;
+      let status;
+      if (customerTexted) status = 'The customer was texted their confirmation and estimate.';
+      else if (!booked.contact.smsConsent) status = `>>> CONFIRM WITH THIS CUSTOMER: they did not check the box for automatic texts. Call or text ${customerPhone} to confirm. <<<${customerEmailed ? ' (They were emailed a copy.)' : ''}`;
+      else status = `>>> TEXT THIS CUSTOMER: they were NOT texted automatically (${sms ? 'the text failed' : 'no text service is set up'}). Text ${customerPhone} to confirm. <<<${customerEmailed ? ' (They were emailed a copy.)' : ''}`;
       const ownerEmailed = await emailOwner(
         `New booking: ${SERVICE_NAMES[lead.service] || lead.service}, ${cal.formatDate(lead.booking.date)} at ${cal.formatTime(lead.booking.time)}, ${lead.contact.name}`,
         leadEmail(booked, s2, `A customer just booked on your website.\n${status}`),

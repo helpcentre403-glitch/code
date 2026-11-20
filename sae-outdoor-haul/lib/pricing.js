@@ -108,7 +108,7 @@ function validate(service, body, settings) {
     ask('cityZone', `Tell us whether the address is inside or outside ${settings.business.freeCities[0] || 'the city'}.`);
   }
 
-  data.contact = { name: str(c.name, 100), phone: normalizePhone(c.phone), email: str(c.email, 200) || null };
+  data.contact = { name: str(c.name, 100), phone: normalizePhone(c.phone), email: str(c.email, 200) || null, smsConsent: c.smsConsent === true };
   if (!data.contact.name) ask('contact.name', 'Enter your name.');
   if (!data.contact.phone) ask('contact.phone', 'Enter a 10-digit mobile number so we can text you.');
   if (data.contact.email && !EMAIL_RE.test(data.contact.email)) ask('contact.email', 'That email address does not look right. Fix it or leave it blank.');
