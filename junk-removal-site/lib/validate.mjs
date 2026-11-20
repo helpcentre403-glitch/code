@@ -95,7 +95,6 @@ export function validateLead(form, now = Date.now()) {
       jobTypeLabel: job?.label || "",
       weekend: wk?.value || "",
       weekendLabel: wk?.label || "",
-      weekendSmsPhrase: wk?.smsPhrase || "",
       smsConsent: consent === "yes",
       consentText: config.consentText,
       pageUrl: clean(form.get("page_url"), 300),

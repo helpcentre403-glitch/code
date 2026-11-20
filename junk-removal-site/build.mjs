@@ -37,7 +37,9 @@ function luminance(hex) {
 }
 const contrast = (a, b2) => { const [x, y] = [luminance(a), luminance(b2)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 
-const accent = /^#[0-9a-fA-F]{6}$/.test(config.accentColor) ? config.accentColor : "#F2A900";
+const hex = (v, d) => (/^#[0-9a-fA-F]{6}$/.test(v || "") ? v : d);
+const accent = hex(config.accentColor, "#2E5E3A");
+const accentOnDark = hex(config.accentOnDark, "#9DC4A3");
 const inkDark = "#111111";
 const accentInk = contrast(accent, inkDark) >= contrast(accent, "#ffffff") ? inkDark : "#ffffff";
 const accentInkRatio = contrast(accent, accentInk).toFixed(2);
@@ -163,7 +165,7 @@ cpSync(join(SRC, "assets"), join(DIST, "assets"), { recursive: true });
 
 // Theme: accent color from config, prepended to the stylesheet (no inline styles needed).
 const css = readFileSync(join(SRC, "assets/css/styles.css"), "utf8");
-writeFileSync(join(DIST, "assets/css/styles.css"), `:root{--accent:${accent};--accent-ink:${accentInk}}\n` + css);
+writeFileSync(join(DIST, "assets/css/styles.css"), `:root{--accent:${accent};--accent-ink:${accentInk};--accent-on-dark:${accentOnDark}}\n` + css);
 
 // Meta Pixel: generated file with the ID baked in at build time (not in the HTML source).
 const pixelJs = pixelId

@@ -3,15 +3,13 @@
 //   LEAD_STORE=webhook POST JSON to an endpoint the owner runs (e.g. their own database API)
 // A third store, "local" (JSON files on disk), exists only for local development
 // and lives in dev/local-store.mjs so serverless bundles never import Node's fs.
-import { sheetsAppend, sheetsUpdate, sheetsGet, driveUpload } from "./google.mjs";
+import { sheetsAppend, driveUpload } from "./google.mjs";
 
 export const LEAD_COLUMNS = [
-  "Received (Central)", "Lead ID", "Name", "Mobile", "ZIP", "Job type", "Preferred weekend",
-  "Photos", "SMS consent", "Consent text", "Confirmation text", "Owner alert", "Spam flag", "Page",
+  "Received (Central)", "Lead ID", "Status", "Name", "Mobile", "ZIP", "Job type", "Preferred weekend",
+  "Photos", "OK to text", "Consent text", "Spam flag", "Page",
 ];
-export const OPTOUT_COLUMNS = ["Time (Central)", "Mobile", "Status", "Source"];
 export const LEADS_TAB = "Leads";
-export const OPTOUTS_TAB = "OptOuts";
 
 export function centralTime(d = new Date()) {
   const p = Object.fromEntries(
@@ -23,19 +21,14 @@ export function centralTime(d = new Date()) {
   return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second} ${p.timeZoneName}`;
 }
 
+// "Status" starts as "New" (or "Check: possible spam") so the owner can track
+// each lead by editing that cell: Quoted, Booked, Done, etc.
 export function leadRow(rec) {
   return [
-    rec.receivedAt, rec.leadId, rec.name, rec.phone, rec.zip, rec.jobTypeLabel, rec.weekendLabel,
-    rec.photoLinks.join("\n"), rec.smsConsent ? "yes" : "no", rec.consentText,
-    rec.confirmationStatus || "pending", rec.ownerAlertStatus || "pending", rec.spam || "", rec.pageUrl,
+    rec.receivedAt, rec.leadId, rec.spam === "too_fast" ? "Check: possible spam" : "New",
+    rec.name, rec.phone, rec.zip, rec.jobTypeLabel, rec.weekendLabel,
+    rec.photoLinks.join("\n"), rec.smsConsent ? "yes" : "no", rec.consentText, rec.spam || "", rec.pageUrl,
   ];
-}
-
-/** Last recorded status for a phone wins. rows: [[time, phone, status, source], ...] */
-export function optedOutFromRows(rows, phone) {
-  let status = null;
-  for (const r of rows) if (r[1] === phone) status = r[2];
-  return status === "STOP";
 }
 
 export function sheetsStore(env) {
@@ -57,19 +50,7 @@ export function sheetsStore(env) {
       return links;
     },
     async saveLead(rec) {
-      const range = await sheetsAppend(env, `${LEADS_TAB}!A:N`, leadRow(rec));
-      return range; // e.g. "Leads!A7:N7"
-    },
-    async updateLeadStatus(ref, rec) {
-      const m = /!A(\d+):/.exec(ref || "");
-      if (!m) return;
-      await sheetsUpdate(env, `${LEADS_TAB}!K${m[1]}:L${m[1]}`, [rec.confirmationStatus, rec.ownerAlertStatus]);
-    },
-    async isOptedOut(phone) {
-      return optedOutFromRows(await sheetsGet(env, `${OPTOUTS_TAB}!A:D`), phone);
-    },
-    async recordOptStatus(phone, status, source) {
-      await sheetsAppend(env, `${OPTOUTS_TAB}!A:D`, [centralTime(), phone, status, source]);
+      return sheetsAppend(env, `${LEADS_TAB}!A:M`, leadRow(rec));
     },
   };
 }
@@ -99,11 +80,6 @@ export function webhookStore(env) {
       return links;
     },
     async saveLead(rec) { await post({ type: "lead", lead: rec, columns: LEAD_COLUMNS, row: leadRow(rec) }); return rec.leadId; },
-    async updateLeadStatus(ref, rec) {
-      await post({ type: "lead_status", leadId: rec.leadId, confirmation: rec.confirmationStatus, ownerAlert: rec.ownerAlertStatus });
-    },
-    async isOptedOut(phone) { const r = await post({ type: "opt_check", phone }); return r.optedOut === true; },
-    async recordOptStatus(phone, status, source) { await post({ type: "opt_status", phone, status, source, time: centralTime() }); },
   };
 }
 

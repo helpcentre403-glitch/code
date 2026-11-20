@@ -4,21 +4,18 @@ import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { join, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { appendFileSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { loadEnv } from "./load-env.mjs";
-import { handleLead, handleSmsInbound } from "../lib/handlers.mjs";
+import { handleLead } from "../lib/handlers.mjs";
 import { localStore } from "./local-store.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 loadEnv();
 const env = { ...process.env };
-// Safe local defaults: no real texts, leads saved to ./data
-env.SMS_MODE ??= "log";
+// Local default: leads saved to ./data (set LEAD_STORE=sheets in .env to use your real sheet)
 env.LEAD_STORE ??= "local";
 const dataDir = env.LOCAL_DATA_DIR || join(root, "data");
 mkdirSync(dataDir, { recursive: true });
-env.__onLoggedSms = ({ to, body }) =>
-  appendFileSync(join(dataDir, "sms-outbox.jsonl"), JSON.stringify({ time: new Date().toISOString(), to, body }) + "\n");
 const store = env.LEAD_STORE === "local" ? localStore(dataDir) : undefined; // undefined -> sheets/webhook from env
 
 const PORT = Number(env.PORT || 8788);
@@ -63,13 +60,12 @@ createServer(async (req, res) => {
   try {
     const path = req.url.split("?")[0];
     if (path === "/api/lead") return sendWeb(res, await handleLead(await toWebRequest(req), env, { store }));
-    if (path === "/api/sms-inbound") return sendWeb(res, await handleSmsInbound(await toWebRequest(req), env, { store }));
     return serveStatic(req, res);
   } catch (e) {
     console.error(e);
     res.writeHead(500); res.end("Server error");
   }
 }).listen(PORT, () => {
-  console.log(`Site running at http://localhost:${PORT}  (LEAD_STORE=${env.LEAD_STORE}, SMS_MODE=${env.SMS_MODE})`);
-  if (env.LEAD_STORE === "local") console.log(`Leads are saved in ${dataDir}/leads.jsonl, texts in ${dataDir}/sms-outbox.jsonl`);
+  console.log(`Site running at http://localhost:${PORT}  (LEAD_STORE=${env.LEAD_STORE})`);
+  if (env.LEAD_STORE === "local") console.log(`Leads are saved in ${dataDir}/leads.jsonl`);
 });

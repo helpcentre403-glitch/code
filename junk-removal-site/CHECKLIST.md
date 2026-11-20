@@ -1,13 +1,13 @@
 # Launch checklist
 
 Every placeholder that needs real content before launch. Placeholders show on the site
-highlighted in pink. Run `npm run build`: it prints how many are left on each page and
+highlighted in yellow. Run `npm run build`: it prints how many are left on each page and
 warns about config placeholders. **Do not launch until it reports none.**
 
 ## A. Business details: `site.config.mjs`
 - [ ] `business.name`: [BUSINESS NAME]
 - [ ] `business.phone`: [PHONE] (Call buttons use it as a tap-to-call link)
-- [ ] `business.textNumber`: [TEXT NUMBER] (Text buttons use an `sms:` link). If this is your Twilio number, inbound texts are forwarded to `OWNER_ALERT_PHONE`.
+- [ ] `business.textNumber`: [TEXT NUMBER] (Text buttons use an `sms:` link).
 - [ ] `business.email`: [EMAIL]
 - [ ] `business.hoursText`: [HOURS] (weekends only)
 - [ ] `business.hours.Saturday` / `.Sunday` `opens`/`closes` in 24-hour `HH:MM` (used for Google structured data; skipped until set)
@@ -17,8 +17,7 @@ warns about config placeholders. **Do not launch until it reports none.**
 - [ ] `notAccepted`: confirm or replace the 3 items marked [CONFIRM: ...] (refrigerants, tires, hazardous materials)
 - [ ] `pricing.startingAt`: [STARTING PRICE]
 - [ ] `pricing.policyText`: [PRICING TEXT], or "Quote confirmed before pickup." if that is the policy (shown on the homepage and in the Terms)
-- [ ] `accentColor`: optional; keep or change (button text color adjusts for contrast automatically)
-- [ ] `weekends[].smsPhrase`: check the confirmation text wording ("...confirm your Saturday pickup", "...your next-weekend pickup", "...your weekend pickup" for Flexible)
+- [ ] `accentColor` / `accentOnDark`: forest green by default; keep or change
 
 ## B. Homepage: `src/pages/index.html`
 - [ ] Before and after photos: 2 pairs. Replace `placeholder-before.svg` / `placeholder-after.svg` with real, compressed photos (JPG or WEBP, about 1200px wide, under 200 KB). No stock photos.
@@ -42,7 +41,7 @@ warns about config placeholders. **Do not launch until it reports none.**
 - [ ] Privacy: [DATE], [CONFIRM: any other tools], [CONFIRM LIST] of service providers, [RETENTION PERIOD], [MAILING ADDRESS OR CITY, TX]
 - [ ] Terms: [DATE], 4 × [CONFIRM: ...] (final price, prohibited items in a load, customer responsibilities, governing law), [LIABILITY TERMS]
 - [ ] Remove the yellow "TODO: have a lawyer review" banner once reviewed
-- [ ] Confirm the form's fine print ("Msg & data rates may apply. Reply STOP to opt out.") with your lawyer and your Twilio registration
+- [ ] Confirm the form's fine print ("Msg & data rates may apply. Reply STOP to opt out.") with your lawyer
 
 ## E. Images and branding: `src/assets/img/`
 - [ ] `og-image.png`: replace with a 1200×630 image (your truck, team, or a real job) for link previews on Facebook/text messages
@@ -51,18 +50,16 @@ warns about config placeholders. **Do not launch until it reports none.**
 ## F. Accounts and environment variables (see README sections 3 to 6)
 - [ ] Domain bought in **your** name, with registrar login in your control
 - [ ] Hosting account (Cloudflare or Netlify) in your name, repo connected
-- [ ] Google Cloud project + service account; sheet created and shared; `npm run setup:sheet` run
+- [ ] Google Cloud project + service account; sheet created with a `Leads` tab and header row, shared with the service account
+- [ ] Google Sheet email notifications turned on (README section 4)
 - [ ] (Optional) Shared Drive folder for photos → `GOOGLE_DRIVE_FOLDER_ID`
-- [ ] Twilio account, number bought, **A2P 10DLC (or toll-free) registration approved**
-- [ ] Twilio "A message comes in" webhook → `https://yourdomain.com/api/sms-inbound`, same URL in `TWILIO_WEBHOOK_URL`
-- [ ] `OWNER_ALERT_PHONE` set to your cell
 - [ ] Meta Pixel ID → `META_PIXEL_ID`, then redeploy
 - [ ] All variables from `.env.example` set in the host dashboard (secrets marked as encrypted)
 
 ## G. Before going live
 - [ ] `npm run build` reports no placeholders and no warnings
 - [ ] `npm test` passes
-- [ ] Live test (README section 7): submit the form, see the row in the sheet, receive both texts, reply STOP and see the OptOuts row, reply START
+- [ ] Live test (README section 7): submit the form, see the row in the sheet, get the notification email
 - [ ] Meta Events Manager "Test events" shows PageView, Lead, Contact, ViewContent
 - [ ] Submit `https://yourdomain.com/sitemap.xml` in Google Search Console
 - [ ] Check the site on a real phone: tap Call, tap Text, submit with a photo

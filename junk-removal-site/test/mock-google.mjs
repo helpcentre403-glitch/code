@@ -1,12 +1,12 @@
-// A small local stand-in for Google (OAuth, Sheets, Drive) and Twilio, used only
+// A small local stand-in for Google (OAuth, Sheets, Drive), used only
 // by the test suite to exercise the production code paths without real accounts.
 // It implements the request/response shapes from the public API docs; passing
 // here does NOT prove the real services are configured correctly.
 import { createServer } from "node:http";
 import { createVerify } from "node:crypto";
 
-export function startMock({ port, publicKey, twilioSid, twilioToken, optedOutNumbers = [] }) {
-  const state = { sheets: { Leads: [], OptOuts: [] }, drive: [], sms: [], tokenRequests: 0 };
+export function startMock({ port, publicKey }) {
+  const state = { sheets: { Leads: [] }, drive: [], tokenRequests: 0 };
   const server = createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);
     const body = Buffer.concat(chunks);
@@ -37,7 +37,7 @@ export function startMock({ port, publicKey, twilioSid, twilioToken, optedOutNum
         const { values } = JSON.parse(body);
         rows.push(...values);
         const n = rows.length + 1; // row 1 = header
-        return send(200, { updates: { updatedRange: `${tab}!A${n}:N${n}`, updatedRows: values.length } });
+        return send(200, { updates: { updatedRange: `${tab}!A${n}:M${n}`, updatedRows: values.length } });
       }
       if (req.method === "PUT") {
         const { values } = JSON.parse(body);
@@ -61,16 +61,6 @@ export function startMock({ port, publicKey, twilioSid, twilioToken, optedOutNum
       return send(200, { id, webViewLink: `https://drive.google.com/file/d/${id}/view` });
     }
 
-    // Twilio Messages
-    m = /^\/2010-04-01\/Accounts\/([^/]+)\/Messages\.json$/.exec(url.pathname);
-    if (m && req.method === "POST") {
-      const expected = "Basic " + Buffer.from(`${twilioSid}:${twilioToken}`).toString("base64");
-      if (req.headers.authorization !== expected || m[1] !== twilioSid) return send(401, { code: 20003, message: "Authenticate" });
-      const p = Object.fromEntries(new URLSearchParams(body.toString()));
-      if (optedOutNumbers.includes(p.To)) return send(400, { code: 21610, message: "Attempt to send to unsubscribed recipient" });
-      state.sms.push(p);
-      return send(201, { sid: "SM" + String(state.sms.length).padStart(32, "0"), status: "queued" });
-    }
     send(404, { error: "not found", path: url.pathname });
   });
   return new Promise((r) => server.listen(port, () => r({ server, state })));

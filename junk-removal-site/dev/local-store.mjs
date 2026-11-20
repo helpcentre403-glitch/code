@@ -1,14 +1,11 @@
-// LOCAL DEVELOPMENT ONLY: stores leads and opt-outs as files in ./data/
-// so you can test without Google credentials. Not used in production.
-import { mkdirSync, appendFileSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+// LOCAL DEVELOPMENT ONLY: stores leads as files in ./data/ so you can test
+// without Google credentials. Not used in production.
+import { mkdirSync, appendFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { leadRow, LEAD_COLUMNS, optedOutFromRows, centralTime } from "../lib/stores.mjs";
+import { leadRow, LEAD_COLUMNS } from "../lib/stores.mjs";
 
 export function localStore(dir) {
   mkdirSync(join(dir, "uploads"), { recursive: true });
-  const leadsFile = join(dir, "leads.jsonl");
-  const optFile = join(dir, "optouts.jsonl");
-  const readJsonl = (f) => (existsSync(f) ? readFileSync(f, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)) : []);
   return {
     name: "local",
     async savePhotos(files, leadId) {
@@ -22,20 +19,9 @@ export function localStore(dir) {
       return out;
     },
     async saveLead(rec) {
-      const row = Object.fromEntries(LEAD_COLUMNS.map((c, i) => [c, leadRow(rec)[i]]));
-      appendFileSync(leadsFile, JSON.stringify(row) + "\n");
+      const row = leadRow(rec);
+      appendFileSync(join(dir, "leads.jsonl"), JSON.stringify(Object.fromEntries(LEAD_COLUMNS.map((c, i) => [c, row[i]]))) + "\n");
       return rec.leadId;
-    },
-    async updateLeadStatus(ref, rec) {
-      const rows = readJsonl(leadsFile).map((r) => (r["Lead ID"] === ref
-        ? { ...r, "Confirmation text": rec.confirmationStatus, "Owner alert": rec.ownerAlertStatus } : r));
-      writeFileSync(leadsFile, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
-    },
-    async isOptedOut(phone) {
-      return optedOutFromRows(readJsonl(optFile).map((r) => [r.time, r.phone, r.status, r.source]), phone);
-    },
-    async recordOptStatus(phone, status, source) {
-      appendFileSync(optFile, JSON.stringify({ time: centralTime(), phone, status, source }) + "\n");
     },
   };
 }

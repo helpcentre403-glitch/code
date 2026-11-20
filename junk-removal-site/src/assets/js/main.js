@@ -122,6 +122,12 @@
     showErrors(errors);
     if (Object.keys(errors).length) return;
 
+    // Preview copies of the site (no server behind them) skip saving.
+    if (document.querySelector('meta[name="site-preview"]')) {
+      location.href = "thank-you.html";
+      return;
+    }
+
     button.disabled = true;
     var label = button.textContent;
     button.textContent = "Sending...";

@@ -36,9 +36,11 @@ export default {
   // environment variable overrides this value at build time.
   metaPixelId: "",
 
-  // One accent color for buttons and highlights. Text color on the accent is
-  // picked automatically for contrast.
-  accentColor: "#F2A900",
+  // One accent color (forest green) for buttons and highlights. Text color on
+  // the accent is picked automatically for contrast. `accentOnDark` is a lighter
+  // shade of the same green, used for small text on black backgrounds.
+  accentColor: "#2E5E3A",
+  accentOnDark: "#9DC4A3",
 
   serviceArea: [
     "Plano", "Frisco", "Irving", "Richardson", "Garland", "Carrollton",
@@ -58,8 +60,7 @@ export default {
     policyText: "[PRICING TEXT, or \"quote confirmed before pickup\" if that is the policy]", // TODO
   },
 
-  // Form options. `value` is what is stored; `smsPhrase` is used in the
-  // confirmation text: "We'll text you to confirm your {smsPhrase} pickup."
+  // Form options. `value` is what is stored; `label` is what people see.
   jobTypes: [
     { value: "single_item", label: "Single item" },
     { value: "few_items", label: "A few items" },
@@ -68,10 +69,10 @@ export default {
     { value: "not_sure", label: "Not sure" },
   ],
   weekends: [
-    { value: "this_saturday", label: "This Saturday", smsPhrase: "Saturday" },
-    { value: "this_sunday", label: "This Sunday", smsPhrase: "Sunday" },
-    { value: "next_weekend", label: "Next weekend", smsPhrase: "next-weekend" },
-    { value: "flexible", label: "Flexible", smsPhrase: "weekend" },
+    { value: "this_saturday", label: "This Saturday" },
+    { value: "this_sunday", label: "This Sunday" },
+    { value: "next_weekend", label: "Next weekend" },
+    { value: "flexible", label: "Flexible" },
   ],
 
   upload: {

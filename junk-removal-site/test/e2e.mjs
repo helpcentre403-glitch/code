@@ -1,7 +1,7 @@
 // End-to-end test. Run with `npm test` (or `node test/e2e.mjs`).
 //  Part 1: real browser fills and submits the form on the local dev server (needs Playwright; skipped if missing)
-//  Part 2: HTTP checks: server validation, no-JS submit, spam checks, STOP / START handling
-//  Part 3: production code path (Google Sheets + Drive + Twilio) against a local mock of those APIs
+//  Part 2: HTTP checks: server validation, no-JS submit, spam checks
+//  Part 3: production code path (Google Sheets + Drive) against a local mock of those APIs
 import { spawn, execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -9,31 +9,26 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { generateKeyPairSync } from "node:crypto";
-import { computeTwilioSignature } from "../lib/twilio.mjs";
-import { handleLead, handleSmsInbound } from "../lib/handlers.mjs";
-import { startMock } from "./mock-google-twilio.mjs";
+import { handleLead } from "../lib/handlers.mjs";
+import { startMock } from "./mock-google.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = 8790;
 const BASE = `http://localhost:${PORT}`;
 const TEST_PIXEL = "1234567890";
-const AUTH = "test-auth-token";
 const dataDir = mkdtempSync(join(tmpdir(), "jr-e2e-"));
 let failures = 0;
 const check = (cond, label, extra = "") => { console.log(`${cond ? "  PASS" : "  FAIL"}  ${label}${extra ? "  " + extra : ""}`); if (!cond) failures++; };
 const h = (t) => console.log(`\n=== ${t} ===`);
 const readJsonl = (f) => (existsSync(f) ? readFileSync(f, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)) : []);
 const leads = () => readJsonl(join(dataDir, "leads.jsonl"));
-const outbox = () => readJsonl(join(dataDir, "sms-outbox.jsonl"));
-const optouts = () => readJsonl(join(dataDir, "optouts.jsonl"));
 
 // Build with a fake pixel ID so pixel events can be checked (requests to Meta are blocked in the test).
 execFileSync("node", ["build.mjs"], { cwd: root, env: { ...process.env, META_PIXEL_ID: TEST_PIXEL }, stdio: "ignore" });
 
 const server = spawn("node", ["dev/server.mjs"], {
   cwd: root,
-  env: { ...process.env, PORT: String(PORT), LOCAL_DATA_DIR: dataDir, LEAD_STORE: "local", SMS_MODE: "log",
-    OWNER_ALERT_PHONE: "+12145550199", TWILIO_AUTH_TOKEN: AUTH, TWILIO_WEBHOOK_URL: `${BASE}/api/sms-inbound` },
+  env: { ...process.env, PORT: String(PORT), LOCAL_DATA_DIR: dataDir, LEAD_STORE: "local" },
   stdio: ["ignore", "pipe", "pipe"],
 });
 const serverLog = [];
@@ -49,12 +44,6 @@ function leadForm(o = {}) {
   return f;
 }
 const postLead = (form, json = true) => fetch(BASE + "/api/lead", { method: "POST", body: form, redirect: "manual", headers: json ? { accept: "application/json" } : {} });
-async function inbound(params, sign = true) {
-  const url = `${BASE}/api/sms-inbound`;
-  const headers = { "content-type": "application/x-www-form-urlencoded" };
-  if (sign) headers["x-twilio-signature"] = await computeTwilioSignature(AUTH, url, params);
-  return fetch(url, { method: "POST", headers, body: new URLSearchParams(params) });
-}
 
 try {
   // ------------------------------------------------------------------ Part 1
@@ -148,53 +137,31 @@ try {
   r = await postLead(leadForm({ company_website: "http://buy-stuff.example" }));
   check(r.status === 200 && (await r.json()).ok && leads().length === before, "honeypot: bot sees success, nothing saved");
 
-  const smsBefore = outbox().length;
   r = await postLead(leadForm({ name: "Speedy Bot", phone: "2145550177", form_started_at: String(Date.now() - 200) }));
   const fast = leads().at(-1);
-  check(r.status === 200 && fast["Spam flag"] === "too_fast" && outbox().length === smsBefore, "too-fast submit saved with spam flag, no texts sent");
+  check(r.status === 200 && fast["Spam flag"] === "too_fast" && fast.Status === "Check: possible spam", "too-fast submit saved but marked as possible spam");
 
   r = await postLead(leadForm({ name: "No Script", phone: "972-555-0142", form_started_at: undefined }), false);
   check(r.status === 303 && r.headers.get("location") === "/thank-you", "no-JavaScript submit gets 303 redirect to /thank-you");
+  check(leads().at(-1).Name === "No Script", "no-JavaScript submit saved");
 
-  r = await inbound({ From: "+12145550123", To: "+12145550100", Body: "STOP" }, false);
-  check(r.status === 403, "inbound SMS webhook rejects unsigned request (403)");
-  r = await inbound({ From: "+12145550123", To: "+12145550100", Body: "Stop" });
-  check(r.status === 200 && optouts().at(-1)?.status === "STOP", "signed STOP reply recorded in opt-out list");
-
-  const n1 = outbox().length;
-  r = await postLead(leadForm({ name: "Test Customer" }));
-  const afterStop = leads().at(-1);
-  check(afterStop["Confirmation text"] === "skipped_opted_out" && /^logged/.test(afterStop["Owner alert"]) && outbox().length === n1 + 1,
-    "after STOP: no confirmation text to customer, owner still alerted");
-
-  await inbound({ From: "+12145550123", To: "+12145550100", Body: "START" });
-  r = await postLead(leadForm({ name: "Test Customer" }));
-  check(/^logged/.test(leads().at(-1)["Confirmation text"]), "after START: confirmation text sends again");
-
-  await inbound({ From: "+14695550111", To: "+12145550100", Body: "Do you take hot tubs?" });
-  check(outbox().at(-1).to === "+12145550199" && outbox().at(-1).body.includes("hot tubs"), "other inbound texts are forwarded to the owner");
+  r = await fetch(BASE + "/api/sms-inbound", { method: "POST" });
+  check(r.status === 404, "old texting endpoint is gone (404)");
 
   h("Local data after the run (what the owner would see)");
-  console.log("  leads.jsonl:");
-  for (const x of leads()) console.log("   ", JSON.stringify({ id: x["Lead ID"], name: x.Name, mobile: x.Mobile, zip: x.ZIP, job: x["Job type"], weekend: x["Preferred weekend"], photos: x.Photos ? 1 : 0, confirm: x["Confirmation text"], owner: x["Owner alert"], spam: x["Spam flag"] }));
-  console.log("  optouts.jsonl:"); for (const x of optouts()) console.log("   ", JSON.stringify(x));
-  console.log("  Texts (SMS_MODE=log, not actually sent):");
-  for (const x of outbox().slice(0, 2)) console.log(`    to ${x.to}:\n      ` + x.body.replace(/\n/g, "\n      "));
-  console.log(`    ... ${outbox().length} texts total`);
+  for (const x of leads()) console.log("   ", JSON.stringify({ id: x["Lead ID"], status: x.Status, name: x.Name, mobile: x.Mobile, zip: x.ZIP, job: x["Job type"], weekend: x["Preferred weekend"], photos: x.Photos ? 1 : 0, okToText: x["OK to text"], spam: x["Spam flag"] }));
 
   // ------------------------------------------------------------------ Part 3
-  h("Part 3: production path (Google Sheets + Drive + Twilio) against local mock APIs");
+  h("Part 3: production path (Google Sheets + Drive) against a local mock of Google's APIs");
   const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
-  const MOCK = 8791, sid = "AC" + "0".repeat(32), token = "mock-token";
-  const { server: mock, state } = await startMock({ port: MOCK, publicKey, twilioSid: sid, twilioToken: token, optedOutNumbers: ["+19725550188"] });
+  const MOCK = 8791;
+  const { server: mock, state } = await startMock({ port: MOCK, publicKey });
   const env = {
-    LEAD_STORE: "sheets", SMS_MODE: "live",
+    LEAD_STORE: "sheets",
     GOOGLE_SHEET_ID: "sheet123", GOOGLE_SERVICE_ACCOUNT_EMAIL: "lead-writer@test.iam.gserviceaccount.com",
     GOOGLE_PRIVATE_KEY: privateKey.export({ type: "pkcs8", format: "pem" }).replace(/\n/g, "\\n"),
     GOOGLE_DRIVE_FOLDER_ID: "folder123",
     GOOGLE_TOKEN_URL: `http://localhost:${MOCK}/token`, GOOGLE_SHEETS_API: `http://localhost:${MOCK}`, GOOGLE_DRIVE_UPLOAD_API: `http://localhost:${MOCK}`,
-    TWILIO_ACCOUNT_SID: sid, TWILIO_AUTH_TOKEN: token, TWILIO_FROM_NUMBER: "+12145550100", TWILIO_API_BASE: `http://localhost:${MOCK}`,
-    OWNER_ALERT_PHONE: "+12145550199", TWILIO_WEBHOOK_URL: "https://example.com/api/sms-inbound",
   };
   const quiet = { info() {}, warn() {}, error: console.error };
   const req = (f) => new Request("https://example.com/api/lead", { method: "POST", body: f, headers: { accept: "application/json" } });
@@ -206,27 +173,14 @@ try {
   const row = state.sheets.Leads[0];
   check(out.ok && out.redirect === "/thank-you", "handler returned success + redirect", JSON.stringify(out));
   check(state.tokenRequests >= 1, "service-account JWT accepted by mock token endpoint (signature verified)");
-  check(row && row[2] === "Sheet Test" && row[3] === "+14695550134" && row[5] === "Estate or full cleanout", "lead row appended to Leads tab");
-  check(state.drive.length === 1 && state.drive[0].parents[0] === "folder123" && row[7].includes("drive.google.com"), "photo uploaded to Drive folder, link in sheet");
-  check(row[10]?.startsWith("sent") && row[11]?.startsWith("sent"), "status columns updated in place", `confirm=${row[10]} owner=${row[11]}`);
-  const cust = state.sms.find((s) => s.To === "+14695550134");
-  check(cust && cust.Body === `Hi Sheet Test, thanks for your request with [BUSINESS NAME]. We'll text you to confirm your next-weekend pickup. Reply STOP to opt out.`, "Twilio confirmation text sent", cust ? `"${cust.Body}"` : "");
-  check(state.sms.some((s) => s.To === "+12145550199" && s.Body.includes("New quote request")), "Twilio owner alert sent");
+  check(row && row[2] === "New" && row[3] === "Sheet Test" && row[4] === "+14695550134" && row[6] === "Estate or full cleanout", "lead row appended to Leads tab");
+  check(state.drive.length === 1 && state.drive[0].parents[0] === "folder123" && row[8].includes("drive.google.com"), "photo uploaded to Drive folder, link in sheet");
   console.log("  Sheet row:", JSON.stringify(row));
 
-  r = await handleLead(req(leadForm({ name: "Blocked Person", phone: "972-555-0188" })), env, { log: quiet });
-  check((await r.json()).ok && state.sheets.Leads.at(-1)[10].startsWith("opted_out") && state.sheets.OptOuts.at(-1)?.[1] === "+19725550188",
-    "Twilio error 21610 (number had replied STOP) recorded as opt-out");
-
-  const params = { From: "+14695550134", To: "+12145550100", Body: "STOP" };
-  const sreq = new Request(env.TWILIO_WEBHOOK_URL, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", "x-twilio-signature": await computeTwilioSignature(token, env.TWILIO_WEBHOOK_URL, params) }, body: new URLSearchParams(params) });
-  r = await handleSmsInbound(sreq, env, { log: quiet });
-  const countBefore = state.sms.length;
-  await handleLead(req(leadForm({ name: "Sheet Test", phone: "(469) 555-0134" })), env, { log: quiet });
-  check(r.status === 200 && state.sheets.OptOuts.some((x) => x[1] === "+14695550134" && x[2] === "STOP") &&
-    state.sheets.Leads.at(-1)[10] === "skipped_opted_out" && state.sms.length === countBefore + 1,
-    "STOP via webhook stored in OptOuts tab; next lead skips the customer text");
-  console.log("  OptOuts tab:", JSON.stringify(state.sheets.OptOuts));
+  const bad = { ...env, GOOGLE_SHEET_ID: "" };
+  r = await handleLead(req(leadForm()), bad, { log: { info() {}, warn() {}, error() {} } });
+  const badOut = await r.json();
+  check(r.status === 500 && /call/.test(badOut.errors.form), "if the sheet is misconfigured, visitor is told to call or text", badOut.errors.form);
   mock.close();
 } finally {
   server.kill();
