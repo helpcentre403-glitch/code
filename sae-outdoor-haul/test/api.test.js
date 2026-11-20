@@ -95,6 +95,40 @@ test('booking texts the owner who booked, when, and what the job is', async () =
   } finally { await s.close(); }
 });
 
+test('Book This Date emails the owner right away: who, contact info, address, when, and what', async () => {
+  const mails = [];
+  const mailer = { send: async (to, subject, text) => { mails.push({ to, subject, text }); return true; } };
+  const s = await startServer({ settings: pricedSettings(), mailer });
+  try {
+    const r = await s.post('/api/estimate', { service: 'landscaping', answers: { area: 'both', size: 'large', date: '2026-12-12', time: '10:00', address: '5 Elm St, Carrollton, TX', cityZone: 'inside' }, contact: { ...contact, email: 'pat@example.com' } });
+    assert.equal(mails.length, 0, 'no email for a quote alone');
+    await s.post(`/api/leads/${r.json.leadId}/text`, {});
+    assert.equal(mails.length, 0, 'no email for Text Me This Quote');
+    await s.post(`/api/leads/${r.json.leadId}/book`, {});
+    assert.equal(mails.length, 1, 'one email the moment they book');
+    const m = mails[0];
+    assert.equal(m.to, 'Helpcentre403@gmail.com');
+    assert.equal(m.subject, 'New booking: Landscaping, Sat, Dec 12 at 10:00 AM, Test Customer');
+    for (const part of ['A customer just booked', 'Test Customer, (214) 555-0100', 'Address: 5 Elm St, Carrollton, TX', 'Large front and back', 'Customer email: pat@example.com', 'Total: $75', '"cityZone": "inside"']) {
+      assert.ok(m.text.includes(part), `missing "${part}" in:\n${m.text}`);
+    }
+    const lead = (await s.admin('GET', '/api/admin/leads')).json.leads[0];
+    assert.equal(lead.ownerEmailed, true);
+  } finally { await s.close(); }
+});
+
+test('a broken email setup never breaks a booking', async () => {
+  const mailer = { send: async () => { throw new Error('SMTP down'); } };
+  const s = await startServer({ settings: pricedSettings(), mailer });
+  try {
+    const r = await s.post('/api/estimate', { service: 'junk', answers: junkAnswers(), contact });
+    assert.equal((await s.post(`/api/leads/${r.json.leadId}/book`, {})).json.status, 'ok');
+    const lead = (await s.admin('GET', '/api/admin/leads')).json.leads[0];
+    assert.equal(lead.status, 'booked');
+    assert.equal(lead.ownerEmailed, false);
+  } finally { await s.close(); }
+});
+
 test('book race: slot taken between estimate and booking returns 409', async () => {
   const s = await startServer({ settings: pricedSettings() });
   try {

@@ -70,7 +70,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     <button type="button" id="pv-reset">Reset preview data</button>
     <details>
       <summary>What's different in this preview</summary>
-      <p>This is a working copy of the site for review. Prices, hours, and the calendar use the real site code and your rates. The live site measures real driving distance with Google Maps. Here, the Inside/Outside of Carrollton buttons set the fee, and the test distance above stands in for the mileage (over 20 miles gets the contact-us message). On the live site, each booking also texts the owner; this preview cannot send texts. Quotes, bookings, and admin changes are saved only in this browser. On the live site, the admin page needs your password and tap-to-call and tap-to-text open your phone app; inside this preview those links may not open.</p>
+      <p>This is a working copy of the site for review. Prices, hours, and the calendar use the real site code and your rates. The live site measures real driving distance with Google Maps. Here, the Inside/Outside of Carrollton buttons set the fee, and the test distance above stands in for the mileage (over 20 miles gets the contact-us message). On the live site, each booking also emails the owner (and texts, if a text service is added); this preview cannot send email or texts. Quotes, bookings, and admin changes are saved only in this browser. On the live site, the admin page needs your password and tap-to-call and tap-to-text open your phone app; inside this preview those links may not open.</p>
     </details>
   </div>
 </div>

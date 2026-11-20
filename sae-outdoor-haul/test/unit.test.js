@@ -203,3 +203,13 @@ test('settings validation rejects broken admin input', () => {
   assert.equal(p.length, 3);
   assert.ok(validateSettings({}).length > 0);
 });
+
+test('mailer: Gmail settings, SMTP settings, or off; subject cannot inject headers', async () => {
+  const { createMailer } = require('../lib/mailer');
+  assert.equal(createMailer({}), null);
+  const sent = [];
+  const m = createMailer({ GMAIL_USER: 'owner@gmail.com', GMAIL_APP_PASSWORD: 'x' }, { transport: { sendMail: async (o) => sent.push(o) } });
+  await m.send('to@example.com', 'Hi\r\nBcc: evil@example.com', 'body');
+  assert.equal(sent[0].from, 'owner@gmail.com');
+  assert.equal(sent[0].subject, 'Hi Bcc: evil@example.com');
+});

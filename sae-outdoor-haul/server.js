@@ -10,6 +10,7 @@ const { DISCLAIMER, pageTokens, renderTemplate, validateSettings } = require('./
 const { createDistanceService } = require('./lib/distance');
 const { createAi } = require('./lib/ai');
 const { createSms } = require('./lib/sms');
+const { createMailer } = require('./lib/mailer');
 const { defaultSettings } = require('./lib/defaults');
 
 const VIEWS = path.join(__dirname, 'views');
@@ -60,7 +61,11 @@ function createApp(opts = {}) {
   app.use(express.json({ limit: '50kb' }));
   app.use('/assets', express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 
-  const api = createApi({ store, distance, ai, sms, now, log, defaults: defaultSettings, notifyPhone: process.env.OWNER_NOTIFY_PHONE || null });
+  const mailer = opts.mailer !== undefined ? opts.mailer : createMailer(process.env);
+  const api = createApi({
+    store, distance, ai, sms, mailer, now, log, defaults: defaultSettings,
+    notifyPhone: process.env.OWNER_NOTIFY_PHONE || null, notifyEmail: process.env.OWNER_NOTIFY_EMAIL || null,
+  });
   const send = (res, r) => res.status(r.status).json(r.json);
 
   // ---------- Admin auth (HTTP Basic, user "admin") ----------

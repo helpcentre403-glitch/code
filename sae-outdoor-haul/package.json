@@ -10,9 +10,12 @@
     "test:e2e": "node --test test/e2e.test.js",
     "test:all": "node --test test/unit.test.js test/api.test.js test/e2e.test.js"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.11.0",
-    "express": "^4.22.3"
+    "express": "^4.22.3",
+    "nodemailer": "10.3.1"
   }
 }

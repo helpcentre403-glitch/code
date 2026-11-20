@@ -36,11 +36,11 @@ function pricedSettings() {
   return s;
 }
 
-async function startServer({ settings, ai = null, sms = null, now = () => FIXED_NOW, adminPassword = 'test-pass' } = {}) {
+async function startServer({ settings, ai = null, sms = null, mailer = null, now = () => FIXED_NOW, adminPassword = 'test-pass' } = {}) {
   const dataDir = tmpDir();
   if (settings) fs.writeFileSync(path.join(dataDir, 'settings.json'), JSON.stringify(settings));
   const app = createApp({
-    dataDir, ai, sms, now, adminPassword,
+    dataDir, ai, sms, mailer, now, adminPassword,
     distance: createDistanceService({ provider: 'stub', stubTable: STUB }),
     log: { error: () => {} },
     estimateRateLimit: 1000,

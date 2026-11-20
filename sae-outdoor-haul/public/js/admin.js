@@ -54,7 +54,7 @@
             row('Address', (l.answers && l.answers.address) || '-'),
             row('Distance', l.distance ? l.distance.miles + ' mi' + (l.distance.city ? ' (' + l.distance.city + ')' : '') + (l.distance.free ? ' - no fee' : '') : '-'),
             row('Customer said', l.distance && l.distance.customerChose ? l.distance.customerChose + ' of the city' + (l.zoneMismatch ? ' (DOES NOT MATCH THE MAP - check this address)' : '') : '-'),
-            row('Owner texted', l.booking && l.booking.status === 'booked' ? (l.ownerTexted ? 'Yes' : 'No (text service not set up)') : '-'),
+            row('Owner alerted', l.booking && l.booking.status === 'booked' ? [l.ownerEmailed ? 'emailed' : 'not emailed', l.ownerTexted ? 'texted' : 'not texted'].join(', ') : '-'),
             row('Date / time', b),
             row('Same-day', l.sameDay ? 'Yes' : 'No'),
             row('Summary', l.summary || '-'),

@@ -50,7 +50,33 @@ function bookingText(lead, settings) {
   ].filter(Boolean).join('\n');
 }
 
-function createApi({ store, distance, ai = null, sms = null, now = () => new Date(), log = console, defaults = null, notifyPhone = null }) {
+/** Full details for the owner's email: everything the crew needs before calling. */
+function leadEmail(lead, settings, heading) {
+  const lines = [heading, '', bookingText(lead, settings)];
+  const c = lead.contact || {};
+  if (c.email) lines.push(`Customer email: ${c.email}`);
+  if (lead.estimate) {
+    lines.push('', 'Estimate breakdown:');
+    for (const s of lead.estimate.sections) {
+      if (!s.lines.length) continue;
+      lines.push(`  ${s.title}: ${pricing.formatPrice(s.subtotal)}`);
+      for (const l of s.lines) lines.push(`    - ${l.label}: ${l.status === 'ok' ? pricing.formatPrice(l.price) : l.status === 'info' ? '' : 'to confirm'}`);
+    }
+    lines.push(`  Total: ${pricing.formatPrice(lead.estimate.total)}`);
+  }
+  lines.push('', 'All answers:', JSON.stringify({ ...lead.answers, contact: undefined }, null, 2));
+  lines.push('', 'See every lead on your admin page (/admin).');
+  return lines.join('\n');
+}
+
+function createApi({ store, distance, ai = null, sms = null, mailer = null, notifyEmail = null, now = () => new Date(), log = console, defaults = null, notifyPhone = null }) {
+  // Email the owner. Never blocks or breaks the customer's request if email fails.
+  async function emailOwner(subject, body) {
+    const to = notifyEmail || store.getSettings().business.email;
+    if (!mailer || !to) return false;
+    try { return await mailer.send(to, subject, body); } catch (e) { log.error('Owner email failed:', e.message); return false; }
+  }
+
   const bookedKeys = () => new Set(
     store.listLeads().filter((l) => l.booking && l.booking.status === 'booked').map((l) => cal.slotKey(l.booking.date, l.booking.time)),
   );
@@ -167,7 +193,12 @@ function createApi({ store, distance, ai = null, sms = null, now = () => new Dat
           ownerTexted = await sms.send(ownerPhone, bookingText(lead, store.getSettings()).slice(0, 1500));
         } catch (e) { log.error('Owner booking text failed:', e.message); }
       }
-      store.updateLead(lead.id, { ownerTexted });
+      const booked = store.getLead(lead.id);
+      const ownerEmailed = await emailOwner(
+        `New booking: ${SERVICE_NAMES[lead.service] || lead.service}, ${cal.formatDate(lead.booking.date)} at ${cal.formatTime(lead.booking.time)}, ${lead.contact.name}`,
+        leadEmail(booked, store.getSettings(), 'A customer just booked on your website.'),
+      );
+      store.updateLead(lead.id, { ownerTexted, ownerEmailed });
       return ok({ status: 'ok' });
     },
 
@@ -254,4 +285,4 @@ function createApi({ store, distance, ai = null, sms = null, now = () => new Dat
   };
 }
 
-module.exports = { createApi, bookingText, describeJob };
+module.exports = { createApi, bookingText, describeJob, leadEmail };

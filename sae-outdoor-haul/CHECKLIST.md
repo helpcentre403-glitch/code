@@ -25,6 +25,12 @@ Open items are at the top. Everything you confirmed is listed under **Done** at 
 - [ ] **Holiday dates for 2028 and later**: add them in Admin → Hours before late 2027.
 
 ### Hosting
+- [ ] **Booking emails (set up first)**: the moment a customer taps Book This Date, the site emails Helpcentre403@gmail.com with who booked, their phone and email, the address, the date and time, the job, and the estimate. To turn it on:
+  1. In your Google Account, turn on **2-Step Verification**.
+  2. In Google Account > Security, create an **App password** for the website.
+  3. On the web host, set `GMAIL_USER=Helpcentre403@gmail.com` and `GMAIL_APP_PASSWORD=<the 16-character app password>`. Never put it in the code.
+  4. In the Gmail app on your phone, turn on notifications so each booking alerts you.
+  Google's menus may be worded differently than this; I can't confirm their current layout.
 - [ ] **Admin password**: set `ADMIN_PASSWORD` on the server where the site runs. It is deliberately not saved in the code repository. An 8-digit number is weak for a page on the open internet. The admin page locks a visitor out for 15 minutes after 10 wrong passwords, but a longer password is safer.
 - [ ] `GOOGLE_MAPS_API_KEY` for driving distances. The code uses Google's Distance Matrix API. Google has been moving customers to its newer Routes API, so confirm Distance Matrix can be enabled on your Google Cloud project. Without a key, the site uses free OpenStreetMap servers, which are only suitable for testing.
 - [ ] **Text service (Twilio)**: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`. This is what lets the site **text you at (469) 686-4690 every time someone books** (who, when, address, the job, and the estimate). It also sends "Text Me This Quote" to customers automatically. Without it, no texts go out, and bookings only show on your admin page. US business texting generally requires A2P 10DLC registration first. Twilio charges per message; check their current pricing.
