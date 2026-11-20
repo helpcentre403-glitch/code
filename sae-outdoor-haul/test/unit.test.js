@@ -123,7 +123,7 @@ test('validation asks instead of guessing', () => {
   assert.ok(v('landscaping', { area: 'front', size: 'small' }).includes('address'));
   assert.ok(v('landscaping', { ...base, cityZone: '', area: 'front', size: 'small' }).includes('cityZone'));
   assert.ok(v('landscaping', { ...base, area: 'front', size: 'small' }, { name: 'A', phone: '555' }).includes('contact.phone'));
-  assert.equal(pricing.normalizePhone('+1 (469) 686-4690'), '4696864690');
+  assert.equal(pricing.normalizePhone('+1 (469) 756-1984'), '4697561984');
 });
 
 test('calendar: weekday evenings, weekends, holidays, blocks, opens, bookings, lead time', () => {

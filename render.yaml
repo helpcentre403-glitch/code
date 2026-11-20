@@ -30,3 +30,5 @@ services:
         sync: false
       - key: GOOGLE_MAPS_API_KEY # driving distances; leave blank to use free OpenStreetMap for now
         sync: false
+      - key: OWNER_TEXT_EMAIL # optional: 4697561984@tmomail.net, only if a test email to it arrives as a text
+        sync: false

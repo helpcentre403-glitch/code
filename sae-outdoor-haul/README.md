@@ -46,7 +46,8 @@ Open http://localhost:3000. The admin panel is at http://localhost:3000/admin (u
 | `GMAIL_USER`, `GMAIL_APP_PASSWORD` | Email to the owner the moment a customer taps Book This Date (Gmail app password; see CHECKLIST) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Same alerts through any other email provider instead of Gmail |
 | `OWNER_NOTIFY_EMAIL` | Where alert emails go. Defaults to the business email in admin, Helpcentre403@gmail.com |
-| `OWNER_NOTIFY_PHONE` | Where booking texts go (10 digits). Defaults to the business phone in admin, (469) 686-4690 |
+| `OWNER_TEXT_EMAIL` | Optional free text alert per booking through the carrier's email-to-text address, e.g. `4697561984@tmomail.net`. Only if a test email to that address arrives as a text |
+| `OWNER_NOTIFY_PHONE` | Where booking texts go (10 digits). Defaults to the business phone in admin, (469) 756-1984 |
 | `ANTHROPIC_API_KEY` | Optional AI answer check and summary (`ANTHROPIC_MODEL` overrides the model; default `claude-opus-5-5`, with server-side refusal fallback turned on) |
 | `TRUST_PROXY` | Set to `1` behind a proxy so rate limiting sees real client IPs |
 

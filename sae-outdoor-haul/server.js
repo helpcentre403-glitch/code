@@ -64,7 +64,7 @@ function createApp(opts = {}) {
   const mailer = opts.mailer !== undefined ? opts.mailer : createMailer(process.env);
   const api = createApi({
     store, distance, ai, sms, mailer, now, log, defaults: defaultSettings,
-    notifyPhone: process.env.OWNER_NOTIFY_PHONE || null, notifyEmail: process.env.OWNER_NOTIFY_EMAIL || null,
+    notifyPhone: process.env.OWNER_NOTIFY_PHONE || null, notifyEmail: process.env.OWNER_NOTIFY_EMAIL || null, textEmail: process.env.OWNER_TEXT_EMAIL || null,
   });
   const send = (res, r) => res.status(r.status).json(r.json);
 

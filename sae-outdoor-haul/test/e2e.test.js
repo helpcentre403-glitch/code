@@ -52,8 +52,8 @@ test('home page: order, FAQ accordion, tap-to-call/text, no sideways scroll', as
   await faq.locator('summary').click();
   assert.notEqual(await faq.getAttribute('open'), null);
   assert.equal(await page.locator('.faq details').count(), 10);
-  assert.equal(await page.locator('#contact a[href="tel:+14696864690"]').count(), 1);
-  assert.equal(await page.locator('#contact a[href="sms:+14696864690"]').count(), 1);
+  assert.equal(await page.locator('#contact a[href="tel:+14697561984"]').count(), 1);
+  assert.equal(await page.locator('#contact a[href="sms:+14697561984"]').count(), 1);
   await page.locator('.hero a', { hasText: 'Get a Quote' }).click();
   await page.waitForURL(/\/prices$/);
   assert.deepEqual(errors, []);
@@ -101,8 +101,8 @@ test('junk removal: full flow -> estimate breakdown -> Book This Date -> thank y
   await est.getByRole('button', { name: 'Book This Date' }).click();
   await page.waitForURL(/thank-you/);
   assert.match(await page.locator('h1').innerText(), /Got it\. We.ll text you to confirm\./);
-  assert.equal(await page.locator('main a[href="tel:+14696864690"]').count(), 1);
-  assert.equal(await page.locator('main a[href="sms:+14696864690"]').count(), 1);
+  assert.equal(await page.locator('main a[href="tel:+14697561984"]').count(), 1);
+  assert.equal(await page.locator('main a[href="sms:+14697561984"]').count(), 1);
 
   // The booked slot is gone for the next customer
   await page.goto(`${srv.base}/prices`);

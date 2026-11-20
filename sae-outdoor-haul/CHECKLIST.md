@@ -33,13 +33,13 @@ Open items are at the top. Everything you confirmed is listed under **Done** at 
   Google's menus may be worded differently than this; I can't confirm their current layout.
 - [ ] **Admin password**: set `ADMIN_PASSWORD` on the server where the site runs. It is deliberately not saved in the code repository. An 8-digit number is weak for a page on the open internet. The admin page locks a visitor out for 15 minutes after 10 wrong passwords, but a longer password is safer.
 - [ ] `GOOGLE_MAPS_API_KEY` for driving distances. The code uses Google's Distance Matrix API. Google has been moving customers to its newer Routes API, so confirm Distance Matrix can be enabled on your Google Cloud project. Without a key, the site uses free OpenStreetMap servers, which are only suitable for testing.
-- [ ] **Text service (Twilio)**: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`. This is what lets the site **text you at (469) 686-4690 every time someone books** (who, when, address, the job, and the estimate). It also sends "Text Me This Quote" to customers automatically. Without it, no texts go out, and bookings only show on your admin page. US business texting generally requires A2P 10DLC registration first. Twilio charges per message; check their current pricing.
+- [ ] **Text service (Twilio)**: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`. This is what lets the site **text you at (469) 756-1984 every time someone books** (who, when, address, the job, and the estimate). It also sends "Text Me This Quote" to customers automatically. Without it, no texts go out, and bookings only show on your admin page. US business texting generally requires A2P 10DLC registration first. Twilio charges per message; check their current pricing.
 - [ ] Optional: `ANTHROPIC_API_KEY` for the AI answer check and summary.
 - [ ] Choose a host with a **persistent disk** for `DATA_DIR`, serve the site over HTTPS, set `TRUST_PROXY=1` if the app runs behind a proxy, and back up `DATA_DIR`.
 - [ ] Domain name, logo, and a Google Business Profile listing that points to the site.
 
 ## Done (from the owner's answers)
-- Phone and text line: (469) 686-4690 (confirmed, same number)
+- Phone and text line: (469) 756-1984 (confirmed, same number)
 - Email: Helpcentre403@gmail.com
 - Base: Carrollton, TX. Customers tap **Inside of Carrollton** (no distance fee) or **Outside of Carrollton** (flat $10, up to 20 driving miles; over 20 gets the contact-us message). When the map knows the city, the map decides and any mismatch is shown to the customer and flagged on the lead
 - Junk removal:

@@ -13,8 +13,8 @@ test('pages render with phone + Text Us in header and footer on every page', asy
     for (const p of ['/', '/prices', '/thank-you', '/privacy', '/terms']) {
       const r = await s.get(p);
       assert.equal(r.status, 200, p);
-      assert.equal((r.text.match(/href="tel:\+14696864690"/g) || []).length >= 2, true, `${p} phone in header+footer`);
-      assert.equal((r.text.match(/href="sms:\+14696864690"[^>]*>Text Us/g) || []).length >= 2, true, `${p} Text Us in header+footer`);
+      assert.equal((r.text.match(/href="tel:\+14697561984"/g) || []).length >= 2, true, `${p} phone in header+footer`);
+      assert.equal((r.text.match(/href="sms:\+14697561984"[^>]*>Text Us/g) || []).length >= 2, true, `${p} Text Us in header+footer`);
       assert.match(r.text, /href="\/prices">Get a Quote/);
       assert.match(r.text, /href="\/privacy">Privacy Policy/);
       assert.ok(!/\{\{/.test(r.text), `${p} has no unreplaced tokens`);
@@ -24,7 +24,7 @@ test('pages render with phone + Text Us in header and footer on every page', asy
     const order = ['id="services"', 'id="faq"', 'id="where"', 'id="contact"', 'site-footer'].map((x) => home.indexOf(x));
     assert.deepEqual([...order].sort((a, b) => a - b), order, 'home sections in the required order');
     assert.match(home, /Base:<\/strong> Carrollton, TX/);
-    assert.match(home, /\(469\) 686-4690/);
+    assert.match(home, /\(469\) 756-1984/);
     assert.match(home, /mailto:Helpcentre403@gmail\.com/);
     assert.match(home, /Closed Christmas Day/);
     assert.ok(!/\[TODO/.test(home), 'no TODO placeholders left on the home page');
@@ -85,7 +85,7 @@ test('booking texts the owner who booked, when, and what the job is', async () =
     assert.equal(sent.length, 0, 'no owner text for a quote alone');
     assert.equal((await s.post(`/api/leads/${r.json.leadId}/book`, {})).json.status, 'ok');
     assert.equal(sent.length, 1);
-    assert.equal(sent[0].to, '4696864690');
+    assert.equal(sent[0].to, '4697561984');
     const body = sent[0].body;
     for (const part of ['NEW BOOKING: Junk removal', 'Tue, Dec 8 at 6:00 PM', 'Test Customer, (214) 555-0100', 'Address: 100 Main St, Plano, TX', 'old couch, 6 boxes, treadmill', 'Couch x2', 'gate code 1234', 'Estimate: $210 to $310']) {
       assert.ok(body.includes(part), `missing "${part}" in:\n${body}`);

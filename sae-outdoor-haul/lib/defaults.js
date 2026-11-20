@@ -38,8 +38,8 @@ function defaultSettings() {
   return {
     business: {
       name: 'SAE Outdoor and Haul',
-      phone: '4696864690', // provided by owner
-      textNumber: '4696864690', // owner confirmed: same number takes texts
+      phone: '4697561984', // provided by owner
+      textNumber: '4697561984', // owner confirmed: same number takes texts
       email: 'Helpcentre403@gmail.com', // provided by owner
       baseAddress: 'Carrollton, TX', // owner: "centre of Carrollton"
       // Addresses whose geocoded city is in this list get a $0 distance fee.

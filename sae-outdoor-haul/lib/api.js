@@ -69,7 +69,7 @@ function leadEmail(lead, settings, heading) {
   return lines.join('\n');
 }
 
-function createApi({ store, distance, ai = null, sms = null, mailer = null, notifyEmail = null, now = () => new Date(), log = console, defaults = null, notifyPhone = null }) {
+function createApi({ store, distance, ai = null, sms = null, mailer = null, notifyEmail = null, textEmail = null, now = () => new Date(), log = console, defaults = null, notifyPhone = null }) {
   // Email the owner. Never blocks or breaks the customer's request if email fails.
   async function emailOwner(subject, body) {
     const to = notifyEmail || store.getSettings().business.email;
@@ -198,7 +198,18 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
         `New booking: ${SERVICE_NAMES[lead.service] || lead.service}, ${cal.formatDate(lead.booking.date)} at ${cal.formatTime(lead.booking.time)}, ${lead.contact.name}`,
         leadEmail(booked, store.getSettings(), 'A customer just booked on your website.'),
       );
-      store.updateLead(lead.id, { ownerTexted, ownerEmailed });
+      // Optional free "text" alert through the carrier's email-to-text address (e.g. 4697561984@tmomail.net).
+      // Short, because carriers cut long messages. Only works if the carrier still runs that service.
+      let ownerTextEmailed = false;
+      if (mailer && textEmail) {
+        try {
+          const b = lead.booking;
+          const short = [`${SERVICE_NAMES[lead.service] || lead.service}`, `${cal.formatDate(b.date)} ${cal.formatTime(b.time)}`,
+            `${lead.contact.name} ${lead.contact.phone}`, (lead.answers && lead.answers.address) || ''].join(' | ');
+          ownerTextEmailed = await mailer.send(textEmail, 'New booking', short.slice(0, 150));
+        } catch (e) { log.error('Email-to-text alert failed:', e.message); }
+      }
+      store.updateLead(lead.id, { ownerTexted, ownerEmailed, ownerTextEmailed });
       return ok({ status: 'ok' });
     },
 
