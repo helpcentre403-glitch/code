@@ -65,24 +65,33 @@ function createAddressSuggester({ googleKey, fetchImpl = globalThis.fetch, log =
       .slice(0, 5);
   }
 
+  /** Returns { provider, suggestions }; provider says whose data was actually used (for the credit line). */
+  async function lookup(raw) {
+    const q = String(raw || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+    if (q.length < 4) return { provider, suggestions: [] };
+    const key = q.toLowerCase();
+    if (cache.has(key)) return cache.get(key);
+    let result;
+    try {
+      if (provider === 'google') {
+        try { result = { provider: 'google', suggestions: await fromGoogle(q) }; } catch (e) {
+          log.error(`Google address suggestions failed (${e.message}); using free OpenStreetMap instead.`);
+          result = { provider: 'photon', suggestions: await fromPhoton(q) };
+        }
+      } else result = { provider: 'photon', suggestions: await fromPhoton(q) };
+    } catch (e) {
+      log.error('Address suggestions failed:', e.message);
+      return { provider, suggestions: [] }; // typing still works; suggestions just don't show
+    }
+    if (cache.size > 3000) cache.clear();
+    cache.set(key, result);
+    return result;
+  }
+
   return {
     provider,
-    async suggest(raw) {
-      const q = String(raw || '').replace(/\s+/g, ' ').trim().slice(0, 120);
-      if (q.length < 4) return [];
-      const key = q.toLowerCase();
-      if (cache.has(key)) return cache.get(key);
-      let out = [];
-      try {
-        out = provider === 'google' ? await fromGoogle(q) : await fromPhoton(q);
-      } catch (e) {
-        log.error('Address suggestions failed:', e.message);
-        return []; // typing still works; suggestions just don't show
-      }
-      if (cache.size > 3000) cache.clear();
-      cache.set(key, out);
-      return out;
-    },
+    lookup,
+    async suggest(raw) { return (await lookup(raw)).suggestions; },
   };
 }
 

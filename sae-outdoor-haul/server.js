@@ -38,6 +38,7 @@ function createApp(opts = {}) {
     provider: process.env.DISTANCE_PROVIDER || undefined,
     googleKey: process.env.GOOGLE_MAPS_API_KEY,
     stubTable: process.env.DISTANCE_STUB ? JSON.parse(process.env.DISTANCE_STUB) : undefined,
+    log,
   });
   const ai = opts.ai !== undefined ? opts.ai : createAi({ apiKey: process.env.ANTHROPIC_API_KEY });
   const sms = opts.sms !== undefined ? opts.sms : createSms({
@@ -105,7 +106,7 @@ function createApp(opts = {}) {
   app.get('/api/address-suggest', rateLimiter({ windowMs: 10 * 60 * 1000, max: 300 }), async (req, res, next) => {
     try {
       res.set('Cache-Control', 'no-store');
-      res.json({ provider: addresses.provider, suggestions: await addresses.suggest(req.query.q) });
+      res.json(addresses.lookup ? await addresses.lookup(req.query.q) : { provider: addresses.provider, suggestions: await addresses.suggest(req.query.q) });
     } catch (e) { next(e); }
   });
   app.post('/api/estimate', rateLimiter({ windowMs: 15 * 60 * 1000, max: opts.estimateRateLimit || 40 }), async (req, res, next) => {

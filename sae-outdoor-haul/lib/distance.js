@@ -95,7 +95,21 @@ function createDistanceService(opts = {}) {
   let lookup;
   if (name === 'google') {
     if (!opts.googleKey) throw new Error('DISTANCE_PROVIDER=google requires GOOGLE_MAPS_API_KEY');
-    lookup = googleProvider({ apiKey: opts.googleKey, fetchImpl });
+    // If Google rejects the key or is down, fall back to the free OpenStreetMap services
+    // instead of failing the customer's estimate. Addresses Google can't find stay "not found".
+    const google = googleProvider({ apiKey: opts.googleKey, fetchImpl });
+    const backup = osrmProvider({ fetchImpl });
+    const log = opts.log || console;
+    let warned = false;
+    lookup = async (origin, destination) => {
+      try {
+        return await google(origin, destination);
+      } catch (e) {
+        if (!(e instanceof DistanceError) || e.code !== 'unavailable') throw e;
+        if (!warned) { log.error(`Google Maps failed (${e.message}); using free OpenStreetMap instead. Check the Google key: Distance Matrix API enabled, billing on, no website-only restriction.`); warned = true; }
+        return backup(origin, destination);
+      }
+    };
   } else if (name === 'osrm') lookup = osrmProvider({ fetchImpl });
   else if (name === 'stub') lookup = stubProvider(opts.stubTable || {});
   else throw new Error(`Unknown DISTANCE_PROVIDER "${name}"`);

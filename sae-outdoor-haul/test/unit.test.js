@@ -255,3 +255,29 @@ test('address suggestions: Photon (free) formatting, Google formatting, failures
   const broken = createAddressSuggester({ fetchImpl: async () => { throw new Error('down'); }, log: { error() {} } });
   assert.deepEqual(await broken.suggest('2400 kelly'), []);
 });
+
+test('Google key rejected: distance and address suggestions fall back to free OpenStreetMap', async () => {
+  const { createDistanceService } = require('../lib/distance');
+  const { createAddressSuggester } = require('../lib/address');
+  const seen = [];
+  const fetchImpl = async (url) => {
+    const u = String(url);
+    seen.push(u.split('?')[0]);
+    if (u.includes('maps.googleapis.com')) return { ok: true, json: async () => ({ status: 'REQUEST_DENIED', rows: [] }) };
+    if (u.includes('places.googleapis.com')) return { ok: false, status: 403, json: async () => ({}) };
+    if (u.includes('nominatim')) return { ok: true, json: async () => ([{ lat: '33', lon: '-96.9', address: { city: u.includes('Plano') ? 'Plano' : 'Carrollton' }, display_name: 'x' }]) };
+    if (u.includes('project-osrm')) return { ok: true, json: async () => ({ code: 'Ok', routes: [{ distance: 16093.44 }] }) };
+    if (u.includes('photon')) return { ok: true, json: async () => ({ features: [{ properties: { housenumber: '1', street: 'Main Street', city: 'Plano', state: 'Texas', postcode: '75075' } }] }) };
+    throw new Error('unexpected ' + u);
+  };
+  const errors = [];
+  const d = createDistanceService({ provider: 'google', googleKey: 'bad', fetchImpl, log: { error: (m) => errors.push(m) } });
+  const r = await d.measure('Carrollton, TX', '1 Main St, Plano, TX');
+  assert.equal(Math.round(r.miles), 10);
+  assert.equal(r.city, 'Plano');
+  assert.match(errors[0], /REQUEST_DENIED/);
+  const a = createAddressSuggester({ googleKey: 'bad', fetchImpl, log: { error() {} } });
+  assert.deepEqual(await a.suggest('1 main st'), [{ label: '1 Main Street, Plano, TX 75075', city: 'Plano' }]);
+  assert.equal((await a.lookup('1 main st')).provider, 'photon', 'credit line names whose data was used');
+  assert.ok(seen.some((x) => x.includes('photon')));
+});
