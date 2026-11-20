@@ -1,0 +1,32 @@
+# Render Blueprint for the SAE Outdoor and Haul website (the app lives in sae-outdoor-haul/).
+# In Render: New > Blueprint > pick this repository. Render asks for the values marked sync: false.
+services:
+  - type: web
+    name: sae-outdoor-haul
+    runtime: node
+    rootDir: sae-outdoor-haul
+    branch: claude/zen-lamport-bjyyhw
+    plan: starter # paid plan: needed so bookings and settings survive restarts (persistent disk)
+    buildCommand: npm ci --omit=dev
+    startCommand: node server.js
+    healthCheckPath: /
+    autoDeploy: true
+    disk:
+      name: sae-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATA_DIR
+        value: /var/data
+      - key: TRUST_PROXY
+        value: "1"
+      - key: ADMIN_PASSWORD # password for /admin (user name: admin)
+        sync: false
+      - key: GMAIL_USER # Helpcentre403@gmail.com
+        sync: false
+      - key: GMAIL_APP_PASSWORD # 16-character Google app password (not your normal Gmail password)
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY # driving distances; leave blank to use free OpenStreetMap for now
+        sync: false
