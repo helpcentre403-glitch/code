@@ -12,19 +12,16 @@ const { pricedSettings, FIXED_NOW } = require('./helpers');
 const range = (p) => [p.min, p.max];
 const dist = (miles, city = 'Plano', free = false) => ({ miles, city, free });
 
-test('distance bands: boundaries round to nearest mile, free city, over 25', () => {
+test('distance bands (owner rates): $10 for 0-9 mi, $20 for 10-20 mi, nothing past 20, Carrollton free', () => {
   const r = pricedSettings().rates;
   const fee = (miles) => pricing.distanceLine(r, dist(miles)).line.price.min;
-  assert.equal(fee(0), 20);
-  assert.equal(fee(9.4), 20);
-  assert.equal(fee(9.6), 30); // rounds to 10
-  assert.equal(fee(15), 30);
-  assert.equal(fee(15.6), 40);
-  assert.equal(fee(20.4), 40);
-  assert.equal(fee(21), 50);
-  assert.equal(fee(25.4), 50);
-  assert.equal(pricing.distanceLine(r, dist(25.6)).outOfArea, true);
-  assert.equal(pricing.distanceLine(r, dist(40)).outOfArea, true);
+  assert.equal(fee(0), 10);
+  assert.equal(fee(9.4), 10);
+  assert.equal(fee(9.6), 20); // rounds to 10
+  assert.equal(fee(15), 20);
+  assert.equal(fee(20.4), 20);
+  assert.equal(pricing.distanceLine(r, dist(20.6)).outOfArea, true);
+  assert.equal(pricing.distanceLine(r, dist(25)).outOfArea, true);
   const free = pricing.distanceLine(r, dist(3, 'Carrollton', true)).line;
   assert.deepEqual(range(free.price), [0, 0]);
   assert.match(free.label, /Carrollton \(free\)/);
@@ -32,6 +29,7 @@ test('distance bands: boundaries round to nearest mile, free city, over 25', () 
 
 test('distance fee not set yet (TODO) shows "to be confirmed", never a made-up number', () => {
   const r = defaultSettings().rates;
+  r.distance.bands[1].fee = null;
   const l = pricing.distanceLine(r, dist(12)).line;
   assert.equal(l.status, 'tbd');
   assert.equal(l.price, null);
@@ -44,29 +42,39 @@ function junk(overrides = {}) {
 test('junk: load + extras + distance + same-day', () => {
   const s = pricedSettings();
   const e = pricing.computeEstimate(junk({ locations: ['elevated', 'longCarry'], disassembly: true }), s, dist(14.8), { isSameDay: true });
-  // base 450-550, stairs 25-75, long carry 30, disassembly 25-100, distance 30, same-day 40
-  assert.deepEqual(range(e.total), [450 + 25 + 30 + 25 + 30 + 40, 550 + 75 + 30 + 100 + 30 + 40]);
+  // base 450-550, elevated 25-75, long carry 30, disassembly 25-100, distance 20, same-day 40
+  assert.deepEqual(range(e.total), [450 + 25 + 30 + 25 + 20 + 40, 550 + 75 + 30 + 100 + 20 + 40]);
   assert.deepEqual(e.sections.map((x) => x.title), ['Base price', 'Extras', 'Distance fee', 'Same-day fee']);
   assert.equal(e.hasUnpriced, false);
 });
 
-test('junk: items and cleanout used when no load is chosen; minimum charge applies', () => {
+test('junk: items and cleanout priced; $100 minimum applies to the whole job', () => {
   const s = pricedSettings();
   const e1 = pricing.computeEstimate(junk({ load: null, items: [{ key: 'couch', qty: 2 }, { key: 'mattress', qty: 1 }], cleanout: 'shed' }), s, dist(3, 'Carrollton', true));
   assert.deepEqual(range(e1.sections[0].subtotal), [200 + 75 + 175, 300 + 110 + 350]);
   const e2 = pricing.computeEstimate(junk({ load: null, items: [{ key: 'recliner', qty: 1 }] }), s, dist(3, 'Carrollton', true));
-  assert.deepEqual(range(e2.sections[0].subtotal), [100, 100]);
-  assert.ok(e2.sections[0].lines.some((l) => /Minimum service charge/.test(l.label)));
+  assert.deepEqual(range(e2.total), [100, 100]);
+  assert.ok(e2.sections[0].lines.some((l) => /\$100 minimum per junk job/.test(l.label)));
+  // recliner 65-90 + $20 distance = 85-110 -> raised to 100-110
+  const e3 = pricing.computeEstimate(junk({ load: null, items: [{ key: 'recliner', qty: 1 }] }), s, dist(15));
+  assert.deepEqual(range(e3.total), [100, 110]);
+  // no adjustment when the job is already over $100
+  const e4 = pricing.computeEstimate(junk({ load: 'quarter' }), s, dist(15));
+  assert.deepEqual(range(e4.total), [170, 170]);
+  assert.ok(!e4.sections[0].lines.some((l) => l.status === 'info'));
 });
 
-test('junk: load chosen with items uses load price only (no double count)', () => {
+test('junk: trailer load is used only when no items or cleanout are chosen', () => {
   const e = pricing.computeEstimate(junk({ load: 'quarter', items: [{ key: 'couch', qty: 1 }] }), pricedSettings(), dist(3, 'Carrollton', true));
-  assert.deepEqual(range(e.total), [150, 150]);
+  assert.deepEqual(range(e.total), [100, 150]); // couch, not the 1/4 load
+  assert.ok(e.notes.some((n) => /instead of the trailer load/.test(n)));
+  const e2 = pricing.computeEstimate(junk({ load: 'quarter', cleanout: 'smallGarage' }), pricedSettings(), dist(3, 'Carrollton', true));
+  assert.deepEqual(range(e2.total), [200, 200]);
 });
 
 test('junk: open-ended prices keep "+", special materials flagged for confirmation', () => {
   const e = pricing.computeEstimate(junk({ load: 'overFull', whatToGo: 'old tires and broken concrete' }), pricedSettings(), dist(3, 'Carrollton', true));
-  assert.equal(pricing.formatPrice(e.total), '$550 to $700+');
+  assert.equal(pricing.formatPrice(e.total), '$550 to $700');
   const labels = e.sections[1].lines.map((l) => `${l.status}:${l.label}`);
   assert.ok(labels.some((l) => l.startsWith('confirm:Tires')));
   assert.ok(labels.some((l) => l.startsWith('confirm:Concrete')));
@@ -80,7 +88,7 @@ test('junk: same-day fee only when same day', () => {
 
 test('landscaping: visit price + distance', () => {
   const e = pricing.computeEstimate({ service: 'landscaping', area: 'both', size: 'large' }, pricedSettings(), dist(20.4));
-  assert.deepEqual(range(e.total), [75 + 40, 75 + 40]);
+  assert.deepEqual(range(e.total), [75 + 20, 75 + 20]);
   const e2 = pricing.computeEstimate({ service: 'landscaping', area: 'front', size: 'medium' }, pricedSettings(), dist(3, 'Carrollton', true));
   assert.deepEqual(range(e2.total), [35, 35]);
 });
@@ -88,7 +96,7 @@ test('landscaping: visit price + distance', () => {
 test('trees: (tree price + service fee) per tree + distance', () => {
   const data = { service: 'trees', trees: [{ size: 'medium', service: 'both' }, { size: 'large', service: 'delivery' }] };
   const e = pricing.computeEstimate(data, pricedSettings(), dist(6.1));
-  assert.deepEqual(range(e.total), [(80 + 75) + (100 + 75) + 20, (80 + 75) + (100 + 75) + 20]);
+  assert.deepEqual(range(e.total), [(80 + 75) + (100 + 75) + 10, (80 + 75) + (100 + 75) + 10]);
   // With tree price still TODO, it is shown as "to be confirmed" and excluded from the total
   const e2 = pricing.computeEstimate(data, defaultSettings(), dist(3, 'Carrollton', true));
   assert.deepEqual(range(e2.total), [75 + 75, 75 + 75]);
@@ -139,7 +147,16 @@ test('calendar: weekday evenings, weekends, holidays, blocks, opens, bookings, l
   const days = cal.availability(sch, none, FIXED_NOW);
   assert.equal(days[0].date, '2026-12-07');
   assert.equal(days[0].isToday, true);
-  assert.equal(days.length, 21);
+  assert.equal(days.length, 20); // 21-day window minus Christmas Day
+
+  // Owner's holiday rules
+  assert.equal(times('2027-11-25').length, 11); // Thanksgiving 2027 (Thu) = weekend hours
+  assert.equal(times('2026-12-22').length, 11); // Dec 20 - Jan 6 (Tue) = weekend hours
+  assert.equal(times('2027-01-06').length, 11);
+  assert.deepEqual(times('2027-01-07'), ['17:00', '18:00', '19:00', '20:00']); // back to normal
+  assert.deepEqual(times('2026-12-24'), ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00']); // Christmas Eve closes 4 PM
+  assert.deepEqual(times('2026-12-25'), []); // closed Christmas Day
+  assert.ok(!days.some((d) => d.date === '2026-12-25'));
   assert.equal(cal.isSlotAvailable(sch, none, '2027-02-01', '17:00', FIXED_NOW), false); // outside window
   assert.equal(cal.isSlotAvailable(sch, none, '2026-12-08', '16:00', FIXED_NOW), false); // outside hours
   assert.equal(cal.isSlotAvailable(sch, none, '2026-12-08', '17:00', FIXED_NOW), true);

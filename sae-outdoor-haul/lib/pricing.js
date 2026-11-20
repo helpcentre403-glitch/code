@@ -154,24 +154,18 @@ function computeEstimate(data, settings, distance, { isSameDay = false } = {}) {
   if (data.service === 'junk') {
     const j = rates.junk;
     const baseLines = [];
-    if (data.load) {
-      baseLines.push(line(`Trailer: ${j.loads[data.load].label}`, j.loads[data.load].price));
-      if (data.items.length || data.cleanout) {
-        notes.push('You picked a trailer load, so the base price uses the load. Your items and cleanout type are saved for the crew.');
-      }
-    } else {
+    // Owner rule: the trailer load is used only when no single items or cleanout are chosen.
+    if (data.items.length || data.cleanout) {
       for (const it of data.items) {
         const item = j.items[it.key];
         baseLines.push(line(`${item.label}${it.qty > 1 ? ` x ${it.qty}` : ''}`, times(item.price, it.qty)));
       }
       if (data.cleanout) baseLines.push(line(`Cleanout: ${j.cleanouts[data.cleanout].label}`, j.cleanouts[data.cleanout].price));
+      if (data.load) notes.push('You added single items or a cleanout, so the base price uses those instead of the trailer load. Your load choice is saved for the crew.');
+    } else {
+      baseLines.push(line(`Trailer: ${j.loads[data.load].label}`, j.loads[data.load].price));
     }
-    const base = section('Base price', baseLines);
-    if (typeof j.minimumCharge === 'number' && (base.subtotal.min < j.minimumCharge || base.subtotal.max < j.minimumCharge)) {
-      base.subtotal = { min: Math.max(base.subtotal.min, j.minimumCharge), max: Math.max(base.subtotal.max, j.minimumCharge), plus: base.subtotal.plus };
-      base.lines.push({ label: `Minimum service charge (${money(j.minimumCharge)} per job) applied`, price: null, status: 'info' });
-    }
-    sections.push(base);
+    sections.push(section('Base price', baseLines));
 
     const ex = j.extras;
     const extraLines = [];
@@ -206,10 +200,23 @@ function computeEstimate(data, settings, distance, { isSameDay = false } = {}) {
     sections.push(section('Same-day fee', [line(rates.junk.extras.sameDay.label, rates.junk.extras.sameDay.price)]));
   }
 
-  const total = sections.reduce(
+  const sum = () => sections.reduce(
     (acc, s) => ({ min: acc.min + s.subtotal.min, max: acc.max + s.subtotal.max, plus: acc.plus || s.subtotal.plus }),
     { min: 0, max: 0, plus: false },
   );
+  let total = sum();
+  // Junk: every job has a minimum charge (whole job). Raise the base so the total meets it.
+  const minC = data.service === 'junk' ? rates.junk.minimumCharge : null;
+  if (typeof minC === 'number' && (total.min < minC || total.max < minC)) {
+    const base = sections[0];
+    base.subtotal = {
+      min: base.subtotal.min + Math.max(0, minC - total.min),
+      max: base.subtotal.max + Math.max(0, minC - total.max),
+      plus: base.subtotal.plus,
+    };
+    base.lines.push({ label: `${money(minC)} minimum per junk job applied`, price: null, status: 'info' });
+    total = sum();
+  }
   const hasUnpriced = sections.some((s) => s.lines.some((l) => l.status === 'tbd' || l.status === 'confirm'));
   if (hasUnpriced) notes.push('Lines marked "To be confirmed" or "We\'ll confirm" are not included in the range above. Our crew will confirm them with you.');
 

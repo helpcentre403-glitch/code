@@ -19,7 +19,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '
 const todo = (label) => `<span class="todo">[TODO: ${esc(label)}]</span>`;
 const phoneDisplay = (d) => (d && d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : null);
 
-function hoursRows(schedule) {
+function hoursRows(schedule, holidayNote) {
   const h = schedule.hours;
   const fmt = (x) => (x ? `${cal.formatTime(x.open)} to ${cal.formatTime(x.close)}` : 'Closed');
   // Group consecutive weekdays with identical hours (Mon..Sun order).
@@ -36,9 +36,7 @@ function hoursRows(schedule) {
     const name = g.days.length === 1 ? first : g.days.length === 2 ? `${first} and ${lastDay}` : `${first} to ${lastDay}`;
     return `<li><strong>${esc(name)}:</strong> ${esc(g.label)}</li>`;
   });
-  rows.push(`<li><strong>Holidays:</strong> ${esc(fmt(schedule.holidayHours))}</li>`);
-  const upcoming = schedule.holidays.filter((d) => cal.isDate(d)).sort();
-  rows.push(`<li><strong>Holiday dates:</strong> ${upcoming.length ? esc(upcoming.map(cal.formatDate).join(', ')) : todo('OWNER SETS DATES')}</li>`);
+  rows.push(`<li><strong>Holidays:</strong> ${holidayNote ? esc(holidayNote) : `${esc(fmt(schedule.holidayHours))} ${todo('HOLIDAY DATES')}`}</li>`);
   return rows.join('');
 }
 
@@ -60,7 +58,7 @@ function pageTokens(settings) {
     MAX_MILES: esc(settings.rates.distance.maxServiceMiles),
     CITY_LIST_HTML: cities.map((x) => `<li>${x}</li>`).join(''),
     CITY_SENTENCE: `${cities.join(', ')}, and nearby areas`,
-    HOURS_HTML: hoursRows(settings.schedule),
+    HOURS_HTML: hoursRows(settings.schedule, c.holidayNote),
     FAQ_DONT_TAKE: c.dontTake ? esc(c.dontTake) : todo('CONFIRM LIST'),
     FAQ_HOME: c.needToBeHome ? esc(c.needToBeHome) : todo('CONFIRM'),
     FAQ_PAY: c.paymentMethods ? esc(c.paymentMethods) : todo('CONFIRM PAYMENT METHODS'),
@@ -171,14 +169,19 @@ function createApp(opts = {}) {
   );
 
   // ---------- Admin auth (HTTP Basic, user "admin") ----------
+  const failedLogins = new Map(); // ip -> [timestamps]
   function requireAdmin(req, res, next) {
     if (!adminPassword) return res.status(503).send('Admin is disabled. Set the ADMIN_PASSWORD environment variable.');
+    const t = Date.now();
+    const fails = (failedLogins.get(req.ip) || []).filter((x) => t - x < 15 * 60 * 1000);
+    if (fails.length >= 10) return res.status(429).send('Too many failed logins. Try again in 15 minutes.');
     const [scheme, encoded] = String(req.headers.authorization || '').split(' ');
     const [user, ...rest] = scheme === 'Basic' && encoded ? Buffer.from(encoded, 'base64').toString().split(':') : [];
     const pass = rest.join(':');
     const a = crypto.createHash('sha256').update(String(pass)).digest();
     const b = crypto.createHash('sha256').update(String(adminPassword)).digest();
     if (user === 'admin' && crypto.timingSafeEqual(a, b)) return next();
+    if (req.headers.authorization) { fails.push(t); failedLogins.set(req.ip, fails); }
     res.set('WWW-Authenticate', 'Basic realm="Admin", charset="UTF-8"');
     return res.status(401).send('Login required');
   }
@@ -308,6 +311,7 @@ function createApp(opts = {}) {
     const start = cal.nowInZone(s.timezone, now()).date;
     const out = Array.from({ length: days }, (_, i) => cal.addDays(start, i)).map((date) => ({
       date, label: cal.formatDate(date), holiday: s.holidays.includes(date), blocked: s.blockedDates.includes(date),
+      special: (s.specialHours || []).find((x) => x.date === date) || null,
       slots: cal.daySlotStatus(s, date, booked, now()),
     }));
     res.json({ days: out });
@@ -334,6 +338,13 @@ function createApp(opts = {}) {
           if (!s.openedSlots.some((x) => x.date === date && x.time === time)) s.openedSlots.push({ date, time });
         }
         break;
+      case 'setSpecialHours': {
+        const { open, close } = req.body;
+        if (!cal.isTime(open) || !cal.isTime(close) || open >= close) return res.status(400).json({ status: 'error', message: 'Special hours need open before close.' });
+        s.specialHours = (s.specialHours || []).filter((x) => x.date !== date).concat({ date, open, close }).sort((x, y) => x.date.localeCompare(y.date));
+        break;
+      }
+      case 'clearSpecialHours': s.specialHours = (s.specialHours || []).filter((x) => x.date !== date); break;
       case 'addHoliday': if (!s.holidays.includes(date)) s.holidays.push(date); s.holidays.sort(); break;
       case 'removeHoliday': s.holidays = s.holidays.filter((d) => d !== date); break;
       default: return res.status(400).json({ status: 'error', message: 'Unknown action.' });
@@ -392,6 +403,7 @@ function validateSettings(s) {
     need(Number.isInteger(sch.bookingWindowDays) && sch.bookingWindowDays >= 1 && sch.bookingWindowDays <= 120, 'Booking window must be 1 to 120 days.');
     need(Number.isInteger(sch.minLeadMinutes) && sch.minLeadMinutes >= 0, 'Same-day notice must be 0 or more minutes.');
     for (const list of ['holidays', 'blockedDates']) need(Array.isArray(sch[list]) && sch[list].every(cal.isDate), `${list} must be dates.`);
+    need(Array.isArray(sch.specialHours) && sch.specialHours.every((x) => cal.isDate(x.date) && cal.isTime(x.open) && cal.isTime(x.close) && x.open < x.close), 'Special hours must be dates with open before close.');
     for (const list of ['blockedSlots', 'openedSlots']) need(Array.isArray(sch[list]) && sch[list].every((x) => cal.isDate(x.date) && cal.isTime(x.time)), `${list} must be dates and times.`);
     const r = s.rates;
     need(r.distance.bands.every((b) => typeof b.maxMiles === 'number' && (b.fee === null || (typeof b.fee === 'number' && b.fee >= 0))), 'Distance bands need max miles and a fee (or blank).');

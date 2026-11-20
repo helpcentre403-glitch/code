@@ -12,13 +12,35 @@
 
 const p = (min, max = min, plus = false) => ({ min, max, plus });
 
+/** Holiday dates (Saturday/Sunday hours) for the 2026-27 and 2027-28 seasons. Add later years in /admin. */
+function holidayDates() {
+  const range = (from, to) => {
+    const out = [];
+    for (let d = new Date(`${from}T00:00:00Z`); d <= new Date(`${to}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) out.push(d.toISOString().slice(0, 10));
+    return out;
+  };
+  return [
+    '2026-11-26', // Thanksgiving
+    ...range('2026-12-20', '2027-01-06'), // Christmas season incl. New Year's Day
+    '2027-01-18', // Martin Luther King Jr. Day
+    '2027-02-15', // Presidents Day
+    '2027-05-31', // Memorial Day
+    '2027-06-19', // Juneteenth
+    '2027-07-04', '2027-07-05', // Independence Day + observed
+    '2027-09-06', // Labor Day
+    '2027-11-11', // Veterans Day
+    '2027-11-25', // Thanksgiving
+    ...range('2027-12-20', '2028-01-06'), // Christmas season
+  ];
+}
+
 function defaultSettings() {
   return {
     business: {
       name: 'SAE Outdoor and Haul',
       phone: '4696864690', // provided by owner
-      textNumber: '4696864690', // TODO: confirm the text line is the same number as the phone
-      email: null, // TODO: [EMAIL]
+      textNumber: '4696864690', // owner confirmed: same number takes texts
+      email: 'Helpcentre403@gmail.com', // provided by owner
       baseAddress: 'Carrollton, TX', // owner: "centre of Carrollton"
       // Addresses whose geocoded city is in this list get a $0 distance fee.
       freeCities: ['Carrollton'],
@@ -28,9 +50,11 @@ function defaultSettings() {
       ],
     },
     content: {
-      dontTake: null, // TODO: [CONFIRM LIST]
-      needToBeHome: null, // TODO: [CONFIRM]
-      paymentMethods: null, // TODO: [CONFIRM PAYMENT METHODS]
+      // Drafted by the developer at the owner's request ("make them up"). Owner should confirm.
+      dontTake: 'Hazardous materials such as chemicals, solvents, pesticides, gasoline, asbestos, and medical waste, plus anything leaking or flammable. Tires, paint, and heavy materials like concrete, dirt, or roofing are handled case by case and quoted separately',
+      needToBeHome: "Not always. For driveway or curbside pickups, lawn visits, and Christmas tree drop-offs, you don't need to be home as long as we can reach the spot and you've told us where to go. For anything inside your home, garage, or shed, an adult needs to be there to let us in and point out the items.",
+      paymentMethods: "Payment is due when the job is finished. We'll confirm the payment options we accept when we text to confirm your booking.",
+      holidayNote: 'Thanksgiving, the Christmas season (Dec 20 to Jan 6), New Year\'s Day, and other major holidays use our Saturday and Sunday hours. Christmas Eve: 10:00 AM to 4:00 PM. Closed Christmas Day.',
     },
     schedule: {
       timezone: 'America/Chicago',
@@ -48,8 +72,15 @@ function defaultSettings() {
         6: { open: '10:00', close: '21:00' },
       },
       holidayHours: { open: '10:00', close: '21:00' },
-      holidays: [], // TODO: [OWNER SETS DATES] e.g. "2026-12-25"
-      blockedDates: [], // whole days closed
+      // Owner: major holidays + Dec 20 to Jan 6 use Saturday/Sunday hours.
+      holidays: holidayDates(),
+      // Owner: closed Christmas Day.
+      blockedDates: ['2026-12-25', '2027-12-25'],
+      // Owner: Christmas Eve closes at 4 PM. Special hours for one date override everything else.
+      specialHours: [
+        { date: '2026-12-24', open: '10:00', close: '16:00' },
+        { date: '2027-12-24', open: '10:00', close: '16:00' },
+      ],
       blockedSlots: [], // { date, time } single slots closed
       openedSlots: [], // { date, time } extra slots opened outside normal hours
     },
@@ -57,22 +88,20 @@ function defaultSettings() {
       distance: {
         // Driving miles from the base address, rounded to the nearest whole mile.
         bands: [
-          { label: '0 to 9 miles', maxMiles: 9, fee: null }, // TODO
-          { label: '10 to 15 miles', maxMiles: 15, fee: null }, // TODO
-          { label: '16 to 20 miles', maxMiles: 20, fee: null }, // TODO
-          { label: '21 to 25 miles', maxMiles: 25, fee: null }, // TODO
+          { label: '0 to 9 miles', maxMiles: 9, fee: 10 }, // owner
+          { label: '10 to 20 miles', maxMiles: 20, fee: 20 }, // owner
         ],
-        maxServiceMiles: 25,
+        maxServiceMiles: 20, // owner: no travel past 20 miles
       },
       junk: {
-        minimumCharge: 100,
+        minimumCharge: 100, // owner: every junk job has a $100 minimum (whole job)
         loads: {
           minimum: { label: 'Minimum pickup', price: p(100) },
           quarter: { label: '1/4 load', price: p(150) },
           half: { label: '1/2 load', price: p(250) },
           threeQuarter: { label: '3/4 load', price: p(350) },
           full: { label: 'Full load', price: p(450, 550) },
-          overFull: { label: 'Over full load (extra-heavy)', price: p(550, 700, true) },
+          overFull: { label: 'Over full load (extra-heavy)', price: p(550, 700) },
         },
         items: {
           couch: { label: 'Couch', price: p(100, 150) },
@@ -83,7 +112,7 @@ function defaultSettings() {
           diningSet: { label: 'Dining room set', price: p(125, 175) },
           bedFrame: { label: 'Bed frame', price: p(60, 90) },
           yardWaste: { label: 'Yard waste', price: p(100, 200) },
-          constructionDebris: { label: 'Construction debris', price: p(150, 150, true) },
+          constructionDebris: { label: 'Construction debris', price: p(150) },
         },
         cleanouts: {
           smallGarage: { label: 'Small garage', price: p(200) },
@@ -91,12 +120,12 @@ function defaultSettings() {
           shed: { label: 'Shed', price: p(175, 350) },
           storageUnit: { label: 'Storage unit', price: p(200, 450) },
           apartment: { label: 'Apartment', price: p(300, 650) },
-          house: { label: 'House', price: p(600, 1500, true) },
+          house: { label: 'House', price: p(600, 1500) },
           rental: { label: 'Rental property', price: p(300, 800) },
         },
         extras: {
           heavyLifting: { label: 'Heavy lifting', price: p(25, 75) },
-          stairs: { label: 'Stairs or difficult access', price: p(25, 75) },
+          stairs: { label: 'Elevated (upper floor or stairs)', price: p(25, 75) },
           sameDay: { label: 'Same-day service', price: p(40) },
           disassembly: { label: 'Disassembly', price: p(25, 100) },
           longCarry: { label: 'Long carry', price: { min: null, max: null, plus: false } }, // TODO

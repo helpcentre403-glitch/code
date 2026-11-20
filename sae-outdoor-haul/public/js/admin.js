@@ -87,6 +87,8 @@
       r.days.forEach(function (d) {
         var head = h('div', { class: 'cal-head' }, [
           h('strong', { text: d.label }), d.holiday ? h('span', { class: 'pill', text: 'holiday' }) : null,
+          d.special ? h('span', { class: 'pill', text: 'special hours ' + d.special.open + '-' + d.special.close }) : null,
+          d.special ? h('button', { class: 'link-btn', type: 'button', text: 'clear special hours', onclick: function () { calAction('clearSpecialHours', d.date); } }) : null,
           h('button', { class: 'btn btn-small btn-light', type: 'button', text: d.blocked ? 'Unblock day' : 'Block whole day',
             onclick: function () { calAction(d.blocked ? 'unblockDate' : 'blockDate', d.date); } }),
         ]);
@@ -111,6 +113,15 @@
     var t = document.querySelector('[data-extra-time]').value;
     if (!d || !t) return say('Pick a date and a time first.', true);
     calAction('openSlot', d, t.slice(0, 5));
+  });
+  document.querySelector('[data-add-special]').addEventListener('click', function () {
+    var d = document.querySelector('[data-special-date]').value;
+    var o = document.querySelector('[data-special-open]').value.slice(0, 5);
+    var c = document.querySelector('[data-special-close]').value.slice(0, 5);
+    if (!d || !o || !c) return say('Pick a date, opening time, and closing time.', true);
+    api('POST', '/api/admin/calendar', { action: 'setSpecialHours', date: d, open: o, close: c })
+      .then(function () { say('Special hours saved.'); return loadAll(); })
+      .catch(function (e) { say(e.message || 'Could not save special hours', true); });
   });
   document.querySelector('[data-add-holiday]').addEventListener('click', function () {
     var d = document.querySelector('[data-holiday-date]').value;
@@ -219,6 +230,7 @@
     field('Service-area cities (comma separated)', function () { return b.serviceAreaCities.join(', '); }, function (v) { b.serviceAreaCities = v.split(',').map(function (x) { return x.trim(); }).filter(Boolean); });
     field("FAQ: What don't you take? (blank = TODO)", function () { return c.dontTake || ''; }, function (v) { c.dontTake = v.trim() || null; }, { area: true });
     field('FAQ: Do I need to be home? (blank = TODO)', function () { return c.needToBeHome || ''; }, function (v) { c.needToBeHome = v.trim() || null; }, { area: true });
+    field('Holiday hours note (shown under Hours on the home page)', function () { return c.holidayNote || ''; }, function (v) { c.holidayNote = v.trim() || null; }, { area: true });
     field('FAQ: How do I pay? (blank = TODO)', function () { return c.paymentMethods || ''; }, function (v) { c.paymentMethods = v.trim() || null; }, { area: true });
   }
 

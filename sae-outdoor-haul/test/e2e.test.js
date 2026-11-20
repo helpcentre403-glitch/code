@@ -77,8 +77,10 @@ test('junk removal: full flow -> estimate breakdown -> Book This Date -> thank y
 
   const est = page.locator('[data-result="junk"] .estimate');
   await est.waitFor();
-  // full 450-550 + stairs 25-75 + long carry 30 + Plano band 30
-  assert.equal(await est.locator('.total').innerText(), '$535 to $685');
+  // A single item was added, so it is priced instead of the full load:
+  // mattress 75-110 + elevated 25-75 + long carry 30 + Plano $20
+  assert.equal(await est.locator('.total').innerText(), '$150 to $235');
+  assert.ok((await est.innerText()).includes('instead of the trailer load'));
   const text = await est.innerText();
   for (const s of ['Base price', 'Extras', 'Distance fee', 'This is an estimate. Our crew confirms the final price before work starts.']) assert.ok(text.includes(s), s);
   assert.ok(!text.includes('Same-day fee'));
@@ -152,8 +154,8 @@ test('christmas trees: slider starts at 0 (blocked), drag to 2, per-tree choices
   await sec.locator('[data-submit]').click();
   const est = page.locator('[data-result="trees"] .estimate');
   await est.waitFor();
-  // (100 + 115) + (60 + 35) + Addison 0-9 mi band 20
-  assert.equal(await est.locator('.total').innerText(), '$330');
+  // (100 + 115) + (60 + 35) + Addison 0-9 mi band $10
+  assert.equal(await est.locator('.total').innerText(), '$320');
 
   // Back to 0 disables the button again
   await sec.locator('[data-tree-slider]').fill('0');
@@ -162,7 +164,7 @@ test('christmas trees: slider starts at 0 (blocked), drag to 2, per-tree choices
   await ctx.close();
 });
 
-test('over 25 miles shows the contact-us message, not an estimate', async () => {
+test('over 20 miles shows the contact-us message, not an estimate', async () => {
   const { ctx, page } = await phone();
   await page.goto(`${srv.base}/prices#landscaping`);
   await page.waitForSelector('body[data-ready="true"]');
@@ -175,7 +177,7 @@ test('over 25 miles shows the contact-us message, not an estimate', async () => 
   await sec.locator('[data-submit]').click();
   const box = page.locator('[data-result="landscaping"] .estimate.notice');
   await box.waitFor();
-  assert.match(await box.innerText(), /more than 25 driving miles[\s\S]*Contact us/);
+  assert.match(await box.innerText(), /more than 20 driving miles[\s\S]*Contact us/);
   assert.equal(await box.locator('.total').count(), 0);
   await ctx.close();
 });

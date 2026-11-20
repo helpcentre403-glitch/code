@@ -18,8 +18,8 @@ const STUB = {
   plano: { miles: 14.8, city: 'Plano' },
   irving: { miles: 16.2, city: 'Irving' },
   garland: { miles: 20.4, city: 'Garland' },
+  justover: { miles: 20.6, city: 'Lewisville' },
   denton: { miles: 24.9, city: 'Denton' },
-  edge: { miles: 25.4, city: 'Denton' },
   fortworth: { miles: 38.0, city: 'Fort Worth' },
 };
 
@@ -27,11 +27,9 @@ function tmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'sae-test-'));
 }
 
-/** Settings with every TODO amount filled in so totals can be checked. */
+/** Owner's real rates plus test values for the two amounts still TODO (long carry, tree price). */
 function pricedSettings() {
   const s = defaultSettings();
-  const fees = [20, 30, 40, 50];
-  s.rates.distance.bands.forEach((b, i) => { b.fee = fees[i]; });
   s.rates.junk.extras.longCarry.price = { min: 30, max: 30, plus: false };
   s.rates.trees.treePrice = { small: 60, medium: 80, large: 100 };
   return s;

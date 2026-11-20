@@ -43,6 +43,8 @@ function formatDate(date) {
 }
 
 function hoursFor(schedule, date) {
+  const special = (schedule.specialHours || []).find((x) => x.date === date);
+  if (special) return special;
   if (schedule.holidays.includes(date)) return schedule.holidayHours;
   return schedule.hours[weekday(date)] || null;
 }

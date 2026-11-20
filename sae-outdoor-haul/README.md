@@ -28,7 +28,7 @@ Open http://localhost:3000. The admin panel is at http://localhost:3000/admin (u
 ## How an estimate works
 1. The server checks the answers. Anything missing or unclear (a blank "What needs to go?", no address, 0 trees) is returned as a question next to that field. The server does not guess.
 2. The selected time slot is re-checked against the calendar.
-3. Driving distance from the base address is measured. Addresses in a free city (Carrollton) pay $0. Over 25 miles returns a "contact us" message instead of an estimate.
+3. Driving distance from the base address is measured. Addresses in a free city (Carrollton) pay $0. Over 20 miles returns a "contact us" message instead of an estimate.
 4. `lib/pricing.js` calculates every line from the rates table: base, extras, distance fee, and same-day fee. A rate the owner has not set shows as "To be confirmed" and is left out of the total.
 5. Optional AI step (`lib/ai.js`, only when `ANTHROPIC_API_KEY` is set): Claude may ask the customer one clarifying question and writes a short summary. It never sets prices. If its summary contains a dollar amount that is not in the calculated estimate, the summary is discarded and a template is used. If the AI call fails, the template is used too.
 6. The lead is saved with all answers. "Text Me This Quote" and "Book This Date" both lead to the thank-you page. Booking takes the slot off the public calendar.
@@ -57,9 +57,9 @@ npm run test:e2e
 ```
 `npm test` runs the unit and API tests. `npm run test:e2e` runs the browser tests at phone size (390x844) with Playwright and Chromium. The tests use a fixed "now" (Monday, Dec 7, 2026, noon Dallas time) and a fake distance table. They cover:
 
-- every distance band boundary, the Carrollton free rule, and the over-25-miles message
+- every distance band boundary, the Carrollton free rule, and the over-20-miles message
 - each form from start to finish, through booking and the thank-you page
-- the calendar hours (weekday evenings, weekends, holidays, same-day notice, Dallas time zone)
+- the calendar hours (weekday evenings, weekends, holidays, the Dec 20 to Jan 6 season, Christmas Eve and Christmas Day, same-day notice, Dallas time zone)
 - admin edits to hours, blocked dates and slots, extra opened slots, and rates
 - double-booking protection
 - AI fallbacks
