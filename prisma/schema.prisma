@@ -96,3 +96,16 @@ model AppSettings {
   key   String @unique
   value String
 }
+
+model AdAnalysis {
+  id                 String   @id @default(cuid())
+  fileName           String
+  competitor         String   @default("")
+  productName        String   @default("")
+  productDescription String   @default("")
+  transcript         String
+  segments           String   @default("[]")
+  stats              String   @default("{}")
+  analysis           String   @default("{}")
+  createdAt          DateTime @default(now())
+}

@@ -10,6 +10,7 @@ import {
   Users,
   Settings,
   Zap,
+  Film,
 } from 'lucide-react'
 
 const nav = [
@@ -17,6 +18,7 @@ const nav = [
   { href: '/campaigns', label: 'Campaigns',    icon: Megaphone },
   { href: '/email',     label: 'Email Sender', icon: Mail },
   { href: '/sms',       label: 'SMS Sender',   icon: MessageSquare },
+  { href: '/ad-analyzer', label: 'Ad Analyzer', icon: Film },
   { href: '/contacts',  label: 'Contacts',     icon: Users },
   { href: '/settings',  label: 'Settings',     icon: Settings },
 ]

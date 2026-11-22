@@ -16,6 +16,7 @@ export async function PUT(req: NextRequest) {
   const allowedKeys = [
     'SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURE', 'SMTP_USER', 'SMTP_PASS',
     'TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER',
+    'ELEVENLABS_API_KEY', 'ELEVENLABS_STT_MODEL', 'ANTHROPIC_API_KEY',
   ]
 
   for (const [key, value] of Object.entries(settings)) {

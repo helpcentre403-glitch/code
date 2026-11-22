@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Settings, Mail, MessageSquare, Save, CheckCircle, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { Settings, Mail, MessageSquare, Film, Save, CheckCircle, Eye, EyeOff, AlertCircle } from 'lucide-react'
 
 const FIELDS = {
   smtp: [
@@ -15,6 +15,11 @@ const FIELDS = {
     { key: 'TWILIO_ACCOUNT_SID',  label: 'Account SID',    placeholder: 'ACxxxxxxxxxxxxxxxx', type: 'text',     help: 'Find in your Twilio console dashboard' },
     { key: 'TWILIO_AUTH_TOKEN',   label: 'Auth Token',     placeholder: '••••••••',           type: 'password', help: 'Find in your Twilio console dashboard' },
     { key: 'TWILIO_PHONE_NUMBER', label: 'Default Number', placeholder: '+12025551234',       type: 'text',     help: 'Your Twilio phone number (E.164 format)' },
+  ],
+  ai: [
+    { key: 'ELEVENLABS_API_KEY',   label: 'ElevenLabs API Key',  placeholder: '••••••••',  type: 'password', help: 'elevenlabs.io → Developers → API Keys. Needs Speech-to-Text access.' },
+    { key: 'ELEVENLABS_STT_MODEL', label: 'ElevenLabs STT Model', placeholder: 'scribe_v1', type: 'text',     help: 'Speech-to-text model id. Leave blank for scribe_v1.' },
+    { key: 'ANTHROPIC_API_KEY',    label: 'Anthropic API Key',   placeholder: 'sk-ant-…',  type: 'password', help: 'console.anthropic.com → API Keys. Used for the analysis and script writing.' },
   ],
 }
 
@@ -86,7 +91,7 @@ export default function SettingsPage() {
     <div className="space-y-6 animate-fade-in max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-        <p className="text-slate-500 mt-1">Configure email (SMTP) and SMS (Twilio) credentials</p>
+        <p className="text-slate-500 mt-1">Configure email (SMTP), SMS (Twilio) and Ad Analyzer credentials</p>
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-2 text-sm text-amber-800">
@@ -146,6 +151,39 @@ export default function SettingsPage() {
         </p>
         <div className="space-y-3">
           {FIELDS.twilio.map((f) => (
+            <div key={f.key}>
+              <label className="label">{f.label}</label>
+              {f.type === 'password' ? (
+                <PasswordField
+                  value={values[f.key] ?? ''}
+                  onChange={(v) => set(f.key, v)}
+                  placeholder={f.placeholder}
+                />
+              ) : (
+                <input
+                  type={f.type}
+                  className="input"
+                  value={values[f.key] ?? ''}
+                  onChange={(e) => set(f.key, e.target.value)}
+                  placeholder={f.placeholder}
+                />
+              )}
+              {f.help && <p className="text-xs text-slate-400 mt-1">{f.help}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Ad Analyzer */}
+      <div className="card p-5 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <Film className="w-4 h-4 text-purple-500" /> Ad Analyzer (ElevenLabs + Claude)
+        </h2>
+        <p className="text-xs text-slate-500">
+          ElevenLabs transcribes the video; Claude analyzes it and writes your script. Usage is billed to these accounts.
+        </p>
+        <div className="space-y-3">
+          {FIELDS.ai.map((f) => (
             <div key={f.key}>
               <label className="label">{f.label}</label>
               {f.type === 'password' ? (
