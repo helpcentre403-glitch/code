@@ -1,5 +1,4 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod'
 import { z } from 'zod'
 import { getSetting } from './settings'
 
@@ -133,14 +132,14 @@ export function fmtTime(sec: number): string {
 // 2. Analysis + new script (Claude)
 // ---------------------------------------------------------------------------
 
-const Score = z.number().int().describe('Score from 1 (weak) to 10 (excellent)')
+const Score = z.coerce.number().describe('Integer score from 1 (weak) to 10 (excellent)')
 
 export const AnalysisSchema = z.object({
   overview: z.object({
     productAdvertised: z.string(),
     coreAngle: z.string().describe('The main selling angle in one sentence'),
     targetAudience: z.string(),
-    awarenessLevel: z.enum(['unaware', 'problem-aware', 'solution-aware', 'product-aware', 'most-aware']),
+    awarenessLevel: z.string().describe('One of: unaware, problem-aware, solution-aware, product-aware, most-aware'),
     adFormat: z.string().describe('e.g. UGC testimonial, problem/solution, founder story, listicle, us-vs-them, unboxing'),
     oneLineVerdict: z.string(),
   }),
@@ -148,7 +147,7 @@ export const AnalysisSchema = z.object({
     .array(
       z.object({
         timestamp: z.string().describe('m:ss start time of the line, copied from the transcript'),
-        section: z.enum(['hook', 'problem', 'agitation', 'solution', 'demo', 'benefits', 'social-proof', 'objection-handling', 'offer', 'cta', 'other']),
+        section: z.string().describe('One of: hook, problem, agitation, solution, demo, benefits, social-proof, objection-handling, offer, cta, other'),
         line: z.string(),
       }),
     )
@@ -193,7 +192,7 @@ export const AnalysisSchema = z.object({
   newScript: z.object({
     title: z.string(),
     angle: z.string(),
-    estimatedLengthSeconds: z.number().int(),
+    estimatedLengthSeconds: z.coerce.number(),
     lines: z.array(
       z.object({
         section: z.string(),
@@ -263,22 +262,59 @@ ${input.extraNotes?.trim() || 'none'}
 
 Break down this competitor ad (hook, body, CTA, formatting) and write a new script for my product.`
 
-  const response = await client.beta.messages.parse({
-    model: 'claude-opus-5-5',
-    max_tokens: 16000,
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default',
-    output_config: { effort: 'high', format: betaZodOutputFormat(AnalysisSchema) },
-    system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userPrompt }],
-  })
+  const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: 'user', content: userPrompt }]
 
-  if (response.stop_reason === 'refusal') {
-    throw new Error(`Claude declined to analyze this ad${response.stop_details?.explanation ? `: ${response.stop_details.explanation}` : '.'}`)
+  // Up to 2 attempts: if the JSON is malformed or misses fields, ask Claude to fix it once.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const response = await client.beta.messages
+      .stream({
+        model: 'claude-opus-5-5',
+        max_tokens: 32000,
+        betas: ['server-side-fallback-2026-07-01'],
+        fallbacks: 'default',
+        output_config: { effort: 'high' },
+        system: SYSTEM_PROMPT + '\n\n' + OUTPUT_INSTRUCTIONS,
+        messages,
+      })
+      .finalMessage()
+
+    if (response.stop_reason === 'refusal') {
+      throw new Error(`Claude declined to analyze this ad${response.stop_details?.explanation ? `: ${response.stop_details.explanation}` : '.'}`)
+    }
+    if (response.stop_reason === 'max_tokens') {
+      throw new Error('Analysis was cut off (output too long). Try a shorter video.')
+    }
+
+    const text = response.content.map((b) => (b.type === 'text' ? b.text : '')).join('')
+    const problem = validateJson(text)
+    if (problem.ok) return problem.data
+
+    if (attempt === 2) throw new Error(`Claude returned an invalid analysis format: ${problem.error}`)
+    messages.push({ role: 'assistant', content: response.content })
+    messages.push({
+      role: 'user',
+      content: `Your JSON did not match the required schema: ${problem.error}\nReply again with the complete corrected JSON object only.`,
+    })
   }
-  if (response.stop_reason === 'max_tokens') {
-    throw new Error('Analysis was cut off (output too long). Try a shorter video.')
+  throw new Error('Analysis failed')
+}
+
+const OUTPUT_INSTRUCTIONS = `Output format: reply with ONE JSON object and nothing else (no markdown fences, no commentary).
+It must match this JSON Schema exactly, with every field present:
+${JSON.stringify(z.toJSONSchema(AnalysisSchema, { io: 'input' }))}`
+
+function validateJson(text: string): { ok: true; data: AdAnalysisResult } | { ok: false; error: string } {
+  const start = text.indexOf('{')
+  const end = text.lastIndexOf('}')
+  if (start === -1 || end <= start) return { ok: false, error: 'no JSON object found' }
+  let raw: unknown
+  try {
+    raw = JSON.parse(text.slice(start, end + 1))
+  } catch (e) {
+    return { ok: false, error: `invalid JSON (${e instanceof Error ? e.message : 'parse error'})` }
   }
-  if (!response.parsed_output) throw new Error('Could not parse the analysis response.')
-  return response.parsed_output
+  const parsed = AnalysisSchema.safeParse(raw)
+  if (parsed.success) return { ok: true, data: parsed.data }
+  const issues = parsed.error.issues.slice(0, 10).map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`)
+  return { ok: false, error: issues.join('; ') }
 }
