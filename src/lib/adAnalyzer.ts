@@ -181,6 +181,14 @@ export const AnalysisSchema = z.object({
     notes: z.array(z.string()),
   }),
   keyTakeaways: z.array(z.string()).describe('What to steal from this ad'),
+  learnings: z.object({
+    scriptTemplate: z
+      .string()
+      .describe('A fill-in-the-blank skeleton of this ad’s structure, e.g. "[Relatable pain] → [I tried X] → ...", one beat per line, reusable for any product'),
+    powerPhrases: z.array(z.string()).describe('Specific words/phrases from the ad that carry persuasive weight, with a short note on why'),
+    emotionalTriggers: z.array(z.string()).describe('Emotions the ad targets (e.g. frustration, FOMO, relief) and where'),
+    whatToTestNext: z.array(z.string()).describe('Concrete A/B test ideas inspired by this ad'),
+  }),
   alternativeHooks: z.array(z.string()).describe('5 alternative hooks for the user’s product using the same psychology'),
   newScript: z.object({
     title: z.string(),

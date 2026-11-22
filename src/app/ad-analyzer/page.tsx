@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  Film, Upload, Sparkles, Copy, Check, Trash2, AlertCircle, FileText, Search, PenLine, Clock,
+  Film, Upload, Sparkles, Copy, Check, Trash2, AlertCircle, FileText, Search, PenLine, Clock, FileDown, Printer,
 } from 'lucide-react'
+import Link from 'next/link'
 import type { AdAnalysisResult, TranscriptSegment, TranscriptStats } from '@/lib/adAnalyzer'
+import { downloadMarkdown } from '@/lib/adReport'
 
 interface HistoryRow { id: string; fileName: string; competitor: string; productName: string; createdAt: string }
 interface FullAnalysis {
@@ -244,6 +246,15 @@ export default function AdAnalyzerPage() {
                   <Field label="Angle">{a.overview.coreAngle}</Field>
                   <Field label="Audience">{a.overview.targetAudience}</Field>
                 </div>
+                <div className="flex flex-wrap items-center gap-2 mt-5 pt-4 border-t border-slate-100">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 mr-1">Full knowledge doc</span>
+                  <button onClick={() => downloadMarkdown(current)} className="btn-secondary !py-1.5 text-xs">
+                    <FileDown className="w-4 h-4" /> Download for Claude (.md)
+                  </button>
+                  <Link href={`/ad-analyzer/${current.id}/report`} className="btn-secondary !py-1.5 text-xs">
+                    <Printer className="w-4 h-4" /> Save as PDF
+                  </Link>
+                </div>
               </div>
 
               <div className="flex gap-1 bg-white border border-slate-200 rounded-lg p-1 w-fit">
@@ -258,8 +269,14 @@ export default function AdAnalyzerPage() {
                 <div className="space-y-4">
                   <div className="card p-5">
                     <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-slate-800">Script (as spoken)</h3>
+                      <CopyBtn text={current.transcript} label="Copy script" />
+                    </div>
+                    <p className="text-[15px] leading-relaxed text-slate-800 whitespace-pre-wrap">{current.transcript}</p>
+                  </div>
+                  <div className="card p-5">
+                    <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold text-slate-800">Script, labeled by section</h3>
-                      <CopyBtn text={current.transcript} label="Copy raw transcript" />
                     </div>
                     <table className="w-full text-sm">
                       <tbody>
@@ -311,6 +328,17 @@ export default function AdAnalyzerPage() {
                     <Field label="Notes"><List items={a.formatting.notes} /></Field>
                   </Section>
                   <Section title="What to steal"><List items={a.keyTakeaways} /></Section>
+                  {a.learnings && (
+                    <>
+                      <Section title="Reusable script template">
+                        <div className="flex justify-end"><CopyBtn text={a.learnings.scriptTemplate} /></div>
+                        <pre className="bg-slate-50 rounded-lg p-3 text-xs whitespace-pre-wrap font-mono text-slate-800">{a.learnings.scriptTemplate}</pre>
+                      </Section>
+                      <Section title="Power phrases"><List items={a.learnings.powerPhrases} /></Section>
+                      <Section title="Emotional triggers"><List items={a.learnings.emotionalTriggers} /></Section>
+                      <Section title="What to test next"><List items={a.learnings.whatToTestNext} /></Section>
+                    </>
+                  )}
                   <p className="text-xs text-slate-400">Scores are Claude’s judgment from the transcript only — no visuals or performance data (spend, CTR, ROAS) were available.</p>
                 </div>
               )}
