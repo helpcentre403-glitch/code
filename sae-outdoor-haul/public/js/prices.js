@@ -188,7 +188,7 @@
         });
         slots.appendChild(sb);
       });
-      if (d.isToday && isJunk) slots.appendChild(el('p', { class: 'hint full', text: 'Same-day service adds ' + config.junk.extras.sameDay + '.' }));
+      if (d.isToday && isJunk) slots.appendChild(el('p', { class: 'hint full', text: 'Same-day service adds ' + config.junk.extras.sameDay + (config.junk.extras.sameDayWas ? ' (was ' + config.junk.extras.sameDayWas + ')' : '') + '.' }));
     }
     host.appendChild(el('p', { class: 'hint', text: 'Swipe for more dates, then tap a time.' }));
     host.appendChild(dates);
@@ -449,10 +449,15 @@
     e.sections.forEach(function (s) {
       var sec = el('div', { class: 'bd-section' }, [el('div', { class: 'bd-head' }, [el('span', { text: s.title }), el('span', { text: s.lines.length ? s.subtotalDisplay : 'None' })])]);
       s.lines.forEach(function (l) {
-        sec.appendChild(el('div', { class: 'bd-line ' + l.status }, [el('span', { text: l.label }), el('span', { text: l.display || '' })]));
+        sec.appendChild(el('div', { class: 'bd-line ' + l.status }, [el('span', { text: l.label }),
+          el('span', {}, [l.wasDisplay ? el('s', { class: 'was', text: l.wasDisplay + ' ' }) : null, el('span', { text: l.display || '' })])]));
       });
       table.appendChild(sec);
     });
+    if (e.promo) {
+      table.appendChild(el('div', { class: 'bd-line' }, [el('span', { text: 'Before ' + e.promo.label + ' (' + e.promo.percent + '% off)' }), el('span', { text: e.promo.beforeDisplay })]));
+      table.appendChild(el('div', { class: 'bd-line bd-save' }, [el('span', { text: e.promo.label + ': you save' }), el('span', { text: '-' + e.promo.savedDisplay })]));
+    }
     table.appendChild(el('div', { class: 'bd-total' }, [el('span', { text: 'Estimated total' }), el('span', { text: e.totalDisplay })]));
     box.appendChild(table);
     e.notes.forEach(function (n) { box.appendChild(el('p', { class: 'hint', text: n })); });

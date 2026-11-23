@@ -41,7 +41,13 @@ function distanceSentence(settings) {
   return `No distance fee inside ${city}. ${outside}`;
 }
 
-function pageTokens(settings) {
+function promoBanner(settings, now = new Date()) {
+  if (!pricing.promotionActive(settings, now)) return '';
+  const p = settings.promotion;
+  return `<div class="promo-banner" role="note"><strong>${esc(p.label.toUpperCase())}:</strong> ${esc(p.percent)}% off all services. Book by December 4.</div>`;
+}
+
+function pageTokens(settings, now = new Date()) {
   const b = settings.business;
   const c = settings.content;
   const phone = phoneDisplay(b.phone);
@@ -58,6 +64,7 @@ function pageTokens(settings) {
     FREE_CITIES: esc(b.freeCities.join(', ')),
     MAX_MILES: esc(settings.rates.distance.maxServiceMiles),
     DISTANCE_SENTENCE: distanceSentence(settings),
+    PROMO_BANNER: promoBanner(settings, now),
     PIXEL_TAG: b.metaPixelId && /^\d{5,20}$/.test(b.metaPixelId) ? `<script src="/assets/js/pixel.js" data-pixel-id="${esc(b.metaPixelId)}"></script>` : '',
     CITY_LIST_HTML: cities.map((x) => `<li>${x}</li>`).join(''),
     CITY_SENTENCE: `${cities.join(', ')}, and nearby areas`,
@@ -71,8 +78,8 @@ function pageTokens(settings) {
 }
 
 /** Fill a page template. `read(file)` returns a template's text (fs on the server, a bundle in the preview). */
-function renderTemplate(read, name, settings) {
-  const tokens = pageTokens(settings);
+function renderTemplate(read, name, settings, now = new Date()) {
+  const tokens = pageTokens(settings, now);
   let html = read(`${name}.html`).replace(/\{\{>\s*(\w+)\s*\}\}/g, (_, p) => read(`partials/${p}.html`));
   html = html.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in tokens ? tokens[k] : m));
   return html;
@@ -98,6 +105,7 @@ function publicConfig(settings) {
         heavyLifting: pricing.formatPrice(r.junk.extras.heavyLifting.price),
         disassembly: pricing.formatPrice(r.junk.extras.disassembly.price),
         sameDay: pricing.formatPrice(r.junk.extras.sameDay.price),
+        sameDayWas: typeof r.junk.extras.sameDay.was === 'number' ? pricing.money(r.junk.extras.sameDay.was) : null,
       },
       minimumCharge: r.junk.minimumCharge,
     },
@@ -117,10 +125,15 @@ function decorate(estimate) {
   return {
     ...estimate,
     totalDisplay: pricing.formatPrice(estimate.total),
+    promo: estimate.promo ? {
+      label: estimate.promo.label, percent: estimate.promo.percent,
+      beforeDisplay: pricing.formatPrice({ min: estimate.promo.beforeMin, max: estimate.promo.beforeMax, plus: estimate.promo.plus }),
+      savedDisplay: pricing.formatPrice({ min: estimate.promo.savedMin, max: estimate.promo.savedMax, plus: false }),
+    } : null,
     sections: estimate.sections.map((s) => ({
       ...s,
       subtotalDisplay: s.lines.length && s.lines.every((l) => l.free) ? 'No fee' : pricing.formatPrice(s.subtotal),
-      lines: s.lines.map((l) => ({ ...l, display: l.free ? 'No fee' : l.status === 'ok' ? pricing.formatPrice(l.price) : statusText[l.status] })),
+      lines: s.lines.map((l) => ({ ...l, display: l.free ? 'No fee' : l.status === 'ok' ? pricing.formatPrice(l.price) : statusText[l.status], wasDisplay: typeof l.was === 'number' ? pricing.money(l.was) : null })),
     })),
   };
 }

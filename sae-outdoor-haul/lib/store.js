@@ -44,6 +44,14 @@ function createStore(dataDir) {
   }
 
   let settings = fillMissing(readJson(settingsFile, null) || {}, defaultSettings());
+  // One-time update for the owner's Black Friday change (same-day $40 -> $20). Runs once, then never again.
+  if (!(settings.migrations || []).includes('sameday-20-bf-2026')) {
+    if (settings.rates && settings.rates.junk && settings.rates.junk.extras && settings.rates.junk.extras.sameDay) {
+      settings.rates.junk.extras.sameDay = { ...settings.rates.junk.extras.sameDay, price: { min: 20, max: 20, plus: false }, was: 40 };
+    }
+    settings.migrations = [...(settings.migrations || []), 'sameday-20-bf-2026'];
+    writeJson(settingsFile, settings);
+  }
   if (!fs.existsSync(settingsFile)) writeJson(settingsFile, settings);
   let leads = readJson(leadsFile, []);
 

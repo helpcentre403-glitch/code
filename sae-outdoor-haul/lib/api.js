@@ -171,7 +171,7 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
         customerChose: data.cityZone, zoneMismatch, unverified: Boolean(dist.unverified), approximate: Boolean(dist.approximate),
       };
 
-      const estimate = pricing.computeEstimate(data, settings, distanceInfo, { isSameDay });
+      const estimate = pricing.computeEstimate(data, settings, distanceInfo, { isSameDay, now: now() });
       if (distanceInfo.unverified && !estimate.outOfArea) {
         estimate.notes.unshift("We couldn't check this address on the map, so the distance fee is based on your Inside/Outside choice. Our crew will confirm the address before your visit.");
       }

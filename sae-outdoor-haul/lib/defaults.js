@@ -36,6 +36,8 @@ function holidayDates() {
 
 function defaultSettings() {
   return {
+    // Limited-time promotion: 15% off the whole estimate through the end date (Dallas time, inclusive).
+    promotion: { label: 'Black Friday 15% off', percent: 15, endDate: '2026-12-04' },
     business: {
       name: 'SAE Outdoor and Haul',
       phone: '4697561984', // provided by owner
@@ -127,7 +129,7 @@ function defaultSettings() {
         extras: {
           heavyLifting: { label: 'Heavy lifting', price: p(25, 75) },
           stairs: { label: 'Elevated (upper floor or stairs)', price: p(25, 75) },
-          sameDay: { label: 'Same-day service', price: p(40) },
+          sameDay: { label: 'Same-day service', price: p(20), was: 40 }, // owner: now $20, was $40
           disassembly: { label: 'Disassembly', price: p(25, 100) },
           longCarry: { label: 'Long carry', price: { min: null, max: null, plus: false } }, // TODO
         },

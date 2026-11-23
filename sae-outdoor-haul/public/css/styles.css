@@ -341,3 +341,9 @@ button, input, select, textarea { color: var(--ink); }
 .hero-logo { border-radius: 0; overflow: visible; display: flex; justify-content: center; }
 .hero-logo img { width: 100%; max-width: 520px; height: auto; filter: drop-shadow(0 8px 24px rgba(0,0,0,.35)); }
 .card img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; }
+
+/* Black Friday banner and discount display */
+.promo-banner { background: var(--accent); color: var(--accent-ink); text-align: center; font-size: .92rem; padding: 8px 12px; font-weight: 600; }
+.promo-banner strong { letter-spacing: .02em; }
+.bd-save { color: var(--good); font-weight: 800; }
+.bd-line s.was { color: var(--ink-2); margin-right: 6px; }

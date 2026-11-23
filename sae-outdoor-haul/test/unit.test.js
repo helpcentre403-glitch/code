@@ -2,6 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const pricing = require('../lib/pricing');
+const { promotionActive } = pricing;
 const cal = require('../lib/calendar');
 const { amountsIn, createAi } = require('../lib/ai');
 const { cityFromFormatted } = require('../lib/distance');
@@ -9,6 +10,7 @@ const { defaultSettings } = require('../lib/defaults');
 const { validateSettings } = require('../server');
 const { pricedSettings, FIXED_NOW } = require('./helpers');
 
+const computeEstimate = (d, st, di, opts = {}) => pricing.computeEstimate(d, st, di, { now: FIXED_NOW, ...opts });
 const range = (p) => [p.min, p.max];
 const dist = (miles, city = 'Plano', free = false) => ({ miles, city, free });
 
@@ -40,39 +42,39 @@ function junk(overrides = {}) {
 
 test('junk: load + extras + distance + same-day', () => {
   const s = pricedSettings();
-  const e = pricing.computeEstimate(junk({ locations: ['elevated', 'longCarry'], disassembly: true }), s, dist(14.8), { isSameDay: true });
-  // base 450-550, elevated 25-75, long carry 30, disassembly 25-100, distance 20, same-day 40
-  assert.deepEqual(range(e.total), [450 + 25 + 30 + 25 + 10 + 40, 550 + 75 + 30 + 100 + 10 + 40]);
+  const e = computeEstimate(junk({ locations: ['elevated', 'longCarry'], disassembly: true }), s, dist(14.8), { isSameDay: true });
+  // base 450-550, elevated 25-75, long carry 30, disassembly 25-100, distance 10, same-day 20
+  assert.deepEqual(range(e.total), [450 + 25 + 30 + 25 + 10 + 20, 550 + 75 + 30 + 100 + 10 + 20]);
   assert.deepEqual(e.sections.map((x) => x.title), ['Base price', 'Extras', 'Distance fee', 'Same-day fee']);
   assert.equal(e.hasUnpriced, false);
 });
 
 test('junk: items and cleanout priced; $100 minimum applies to the whole job', () => {
   const s = pricedSettings();
-  const e1 = pricing.computeEstimate(junk({ load: null, items: [{ key: 'couch', qty: 2 }, { key: 'mattress', qty: 1 }], cleanout: 'shed' }), s, dist(3, 'Carrollton', true));
+  const e1 = computeEstimate(junk({ load: null, items: [{ key: 'couch', qty: 2 }, { key: 'mattress', qty: 1 }], cleanout: 'shed' }), s, dist(3, 'Carrollton', true));
   assert.deepEqual(range(e1.sections[0].subtotal), [200 + 75 + 175, 300 + 110 + 350]);
-  const e2 = pricing.computeEstimate(junk({ load: null, items: [{ key: 'recliner', qty: 1 }] }), s, dist(3, 'Carrollton', true));
+  const e2 = computeEstimate(junk({ load: null, items: [{ key: 'recliner', qty: 1 }] }), s, dist(3, 'Carrollton', true));
   assert.deepEqual(range(e2.total), [100, 100]);
   assert.ok(e2.sections[0].lines.some((l) => /\$100 minimum per junk job/.test(l.label)));
   // recliner 65-90 + $10 distance = 75-100 -> raised to 100-100
-  const e3 = pricing.computeEstimate(junk({ load: null, items: [{ key: 'recliner', qty: 1 }] }), s, dist(15));
+  const e3 = computeEstimate(junk({ load: null, items: [{ key: 'recliner', qty: 1 }] }), s, dist(15));
   assert.deepEqual(range(e3.total), [100, 100]);
   // no adjustment when the job is already over $100
-  const e4 = pricing.computeEstimate(junk({ load: 'quarter' }), s, dist(15));
+  const e4 = computeEstimate(junk({ load: 'quarter' }), s, dist(15));
   assert.deepEqual(range(e4.total), [160, 160]);
   assert.ok(!e4.sections[0].lines.some((l) => l.status === 'info'));
 });
 
 test('junk: trailer load is used only when no items or cleanout are chosen', () => {
-  const e = pricing.computeEstimate(junk({ load: 'quarter', items: [{ key: 'couch', qty: 1 }] }), pricedSettings(), dist(3, 'Carrollton', true));
+  const e = computeEstimate(junk({ load: 'quarter', items: [{ key: 'couch', qty: 1 }] }), pricedSettings(), dist(3, 'Carrollton', true));
   assert.deepEqual(range(e.total), [100, 150]); // couch, not the 1/4 load
   assert.ok(e.notes.some((n) => /instead of the trailer load/.test(n)));
-  const e2 = pricing.computeEstimate(junk({ load: 'quarter', cleanout: 'smallGarage' }), pricedSettings(), dist(3, 'Carrollton', true));
+  const e2 = computeEstimate(junk({ load: 'quarter', cleanout: 'smallGarage' }), pricedSettings(), dist(3, 'Carrollton', true));
   assert.deepEqual(range(e2.total), [200, 200]);
 });
 
 test('junk: open-ended prices keep "+", special materials flagged for confirmation', () => {
-  const e = pricing.computeEstimate(junk({ load: 'overFull', whatToGo: 'old tires and broken concrete' }), pricedSettings(), dist(3, 'Carrollton', true));
+  const e = computeEstimate(junk({ load: 'overFull', whatToGo: 'old tires and broken concrete' }), pricedSettings(), dist(3, 'Carrollton', true));
   assert.equal(pricing.formatPrice(e.total), '$550 to $700');
   const labels = e.sections[1].lines.map((l) => `${l.status}:${l.label}`);
   assert.ok(labels.some((l) => l.startsWith('confirm:Tires')));
@@ -81,29 +83,29 @@ test('junk: open-ended prices keep "+", special materials flagged for confirmati
 });
 
 test('junk: same-day fee only when same day', () => {
-  const e = pricing.computeEstimate(junk(), pricedSettings(), dist(3, 'Carrollton', true), { isSameDay: false });
+  const e = computeEstimate(junk(), pricedSettings(), dist(3, 'Carrollton', true), { isSameDay: false });
   assert.ok(!e.sections.some((x) => x.title === 'Same-day fee'));
 });
 
 test('landscaping: visit price + distance', () => {
-  const e = pricing.computeEstimate({ service: 'landscaping', area: 'both', size: 'large' }, pricedSettings(), dist(20.4));
+  const e = computeEstimate({ service: 'landscaping', area: 'both', size: 'large' }, pricedSettings(), dist(20.4));
   assert.deepEqual(range(e.total), [75 + 10, 75 + 10]);
-  const e2 = pricing.computeEstimate({ service: 'landscaping', area: 'front', size: 'medium' }, pricedSettings(), dist(3, 'Carrollton', true));
+  const e2 = computeEstimate({ service: 'landscaping', area: 'front', size: 'medium' }, pricedSettings(), dist(3, 'Carrollton', true));
   assert.deepEqual(range(e2.total), [35, 35]);
 });
 
 test('trees: (tree price + service fee) per tree + distance', () => {
   const data = { service: 'trees', trees: [{ size: 'medium', service: 'both' }, { size: 'large', service: 'delivery' }] };
-  const e = pricing.computeEstimate(data, pricedSettings(), dist(6.1));
+  const e = computeEstimate(data, pricedSettings(), dist(6.1));
   assert.deepEqual(range(e.total), [(80 + 75) + (100 + 75) + 10, (80 + 75) + (100 + 75) + 10]);
   // Owner default: each tree is estimated at "$60+" and included in the total with a "+"
-  const e2 = pricing.computeEstimate(data, defaultSettings(), dist(3, 'Carrollton', true));
+  const e2 = computeEstimate(data, defaultSettings(), dist(3, 'Carrollton', true));
   assert.equal(pricing.formatPrice(e2.total), `$${60 + 75 + 60 + 75}+`);
   assert.ok(e2.sections[0].lines[0].label.includes("we'll tell you the exact cost"));
   // A tree price the owner clears in admin shows "to be confirmed" and is left out
   const cleared = defaultSettings();
   cleared.rates.trees.treePrice.medium = { min: null, max: null, plus: false };
-  const e3 = pricing.computeEstimate(data, cleared, dist(3, 'Carrollton', true));
+  const e3 = computeEstimate(data, cleared, dist(3, 'Carrollton', true));
   assert.equal(e3.sections[0].lines.filter((l) => l.status === 'tbd').length, 1);
 });
 
@@ -180,7 +182,7 @@ test('calendar uses Dallas time even when UTC has rolled over to the next day', 
 
 test('AI guard: summary dollar amounts must come from the estimate', async () => {
   assert.deepEqual(amountsIn('From $1,500 to $2,000.50 or $40'), [1500, 2000.5, 40]);
-  const estimate = pricing.computeEstimate({ service: 'landscaping', area: 'front', size: 'small' }, pricedSettings(), dist(3, 'Carrollton', true));
+  const estimate = computeEstimate({ service: 'landscaping', area: 'front', size: 'small' }, pricedSettings(), dist(3, 'Carrollton', true));
   const fake = (summary) => ({ beta: { messages: { create: async () => ({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify({ questions: [], summary }) }] }) } } });
   const ok = await createAi({ client: fake('Your front yard mow is $30.') }).review({ data: { service: 'landscaping' }, estimate });
   assert.equal(ok.summary, 'Your front yard mow is $30.');
@@ -363,4 +365,24 @@ test('phone is optional; a typed but invalid phone is flagged; no text consent w
   assert.ok(errs({ name: 'Al', email: 'al@example.com', phone: '555' }).includes('contact.phone'), 'bad phone flagged');
   const ok = pricing.validate('landscaping', { answers: { ...base, area: 'front', size: 'small' }, contact: { name: 'Al', email: 'al@example.com', smsConsent: true } }, s);
   assert.equal(ok.data.contact.smsConsent, false, 'consent needs a phone number');
+});
+
+test('Black Friday: 15% off the whole estimate through Dec 4 (Dallas time), with the savings shown', () => {
+  const st = pricedSettings();
+  const last = computeEstimate(junk({ load: 'quarter' }), st, dist(3, 'Carrollton', true), { now: new Date('2026-12-05T05:59:00Z') }); // Dec 4, 11:59 PM Dallas
+  assert.ok(last.promo, 'active on Dec 4 Dallas time');
+  assert.equal(last.promo.percent, 15);
+  assert.deepEqual(range(last.total), [128, 128], '$150 less 15% = $127.50, rounded to $128');
+  assert.equal(last.promo.savedMin, 22);
+  const after = computeEstimate(junk({ load: 'quarter' }), st, dist(3, 'Carrollton', true), { now: new Date('2026-12-05T06:01:00Z') });
+  assert.equal(after.promo, null, 'off on Dec 5 Dallas time');
+  assert.deepEqual(range(after.total), [150, 150]);
+  assert.equal(promotionActive(st, new Date('2026-11-23T18:00:00Z')), true);
+});
+
+test('same-day shows $20 with $40 as the was price', () => {
+  const e = computeEstimate(junk({ load: 'quarter' }), pricedSettings(), dist(3, 'Carrollton', true), { isSameDay: true, now: FIXED_NOW });
+  const sd = e.sections.find((x) => x.title === 'Same-day fee').lines[0];
+  assert.equal(sd.price.min, 20);
+  assert.equal(sd.was, 40);
 });

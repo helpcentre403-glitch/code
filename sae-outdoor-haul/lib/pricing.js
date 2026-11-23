@@ -5,6 +5,8 @@
  * set yet (null) is shown as "To be confirmed" and left out of the total.
  */
 
+const { nowInZone } = require('./calendar');
+
 const money = (n) => `$${Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
 
 function formatPrice(price) {
@@ -156,7 +158,13 @@ function section(title, lines, subtotalOverride) {
  * Build the estimate. `distance` = { miles, city, free }. `isSameDay` from the calendar.
  * Returns { outOfArea } or { sections, total, notes, hasUnpriced }.
  */
-function computeEstimate(data, settings, distance, { isSameDay = false } = {}) {
+function promotionActive(settings, now = new Date()) {
+  const promo = settings.promotion;
+  if (!promo || !promo.endDate) return false;
+  return nowInZone(settings.schedule.timezone, now).date <= promo.endDate;
+}
+
+function computeEstimate(data, settings, distance, { isSameDay = false, now = new Date() } = {}) {
   const rates = settings.rates;
   const dist = distanceLine(rates, distance);
   if (dist.outOfArea) return { outOfArea: true };
@@ -212,7 +220,8 @@ function computeEstimate(data, settings, distance, { isSameDay = false } = {}) {
   sections.push(section('Distance fee', [dist.line]));
 
   if (data.service === 'junk' && isSameDay) {
-    sections.push(section('Same-day fee', [line(rates.junk.extras.sameDay.label, rates.junk.extras.sameDay.price)]));
+    const sd = rates.junk.extras.sameDay;
+    sections.push(section('Same-day fee', [{ ...line(sd.label, sd.price), was: typeof sd.was === 'number' ? sd.was : null }]));
   }
 
   const sum = () => sections.reduce(
@@ -235,7 +244,21 @@ function computeEstimate(data, settings, distance, { isSameDay = false } = {}) {
   const hasUnpriced = sections.some((s) => s.lines.some((l) => l.status === 'tbd' || l.status === 'confirm'));
   if (hasUnpriced) notes.push('Lines marked "To be confirmed" or "We\'ll confirm" are not included in the range above. Our crew will confirm them with you.');
 
-  return { outOfArea: false, sections, total, notes, hasUnpriced };
+  // Black Friday (and any promotion): percent off the whole estimate, shown as a discount.
+  let promo = null;
+  if (promotionActive(settings, now) && typeof total.min === 'number') {
+    const pct = settings.promotion.percent / 100;
+    const before = { min: total.min, max: total.max };
+    const after = { min: Math.round(total.min * (1 - pct)), max: Math.round(total.max * (1 - pct)) };
+    promo = {
+      label: settings.promotion.label, percent: settings.promotion.percent,
+      beforeMin: before.min, beforeMax: before.max, afterMin: after.min, afterMax: after.max,
+      savedMin: before.min - after.min, savedMax: before.max - after.max, plus: total.plus,
+    };
+    total = { min: after.min, max: after.max, plus: total.plus };
+  }
+
+  return { outOfArea: false, sections, total, notes, hasUnpriced, promo };
 }
 
 /** Every dollar figure that legitimately appears in an estimate (used to police the AI summary). */
@@ -257,5 +280,5 @@ function templateSummary(data, estimate, settings) {
 }
 
 module.exports = {
-  validate, computeEstimate, distanceLine, formatPrice, money, allowedAmounts, templateSummary, normalizePhone, isSet,
+  validate, computeEstimate, distanceLine, formatPrice, money, allowedAmounts, templateSummary, normalizePhone, isSet, promotionActive,
 };

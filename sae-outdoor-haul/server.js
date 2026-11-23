@@ -16,7 +16,7 @@ const { defaultSettings } = require('./lib/defaults');
 
 const VIEWS = path.join(__dirname, 'views');
 const readView = (f) => fs.readFileSync(path.join(VIEWS, f), 'utf8');
-const render = (name, settings) => renderTemplate(readView, name, settings);
+const render = (name, settings, now) => renderTemplate(readView, name, settings, now);
 
 function rateLimiter({ windowMs, max }) {
   const hits = new Map();
@@ -91,11 +91,11 @@ function createApp(opts = {}) {
   }
 
   // ---------- Pages ----------
-  const page = (name) => (req, res) => res.type('html').send(render(name, store.getSettings()));
+  const page = (name) => (req, res) => res.type('html').send(render(name, store.getSettings(), now()));
   app.get('/', page('index'));
   app.get('/prices', page('prices'));
   app.get('/thank-you', (req, res) => {
-    let html = render('thank-you', store.getSettings());
+    let html = render('thank-you', store.getSettings(), now());
     if (req.query.email === '1' || req.query.email === undefined) {
       html = html.replace('<!--EMAIL_NOTE-->', '<p class="lead email-note"><strong>Check your email</strong> for your booking confirmation and estimate receipt. If you don\'t see it in a few minutes, check your Spam or Promotions folder.</p>');
     }

@@ -217,10 +217,11 @@ test('same-day junk adds the same-day fee; long carry (still TODO) shows "To be 
     assert.equal(r.json.status, 'ok');
     const secs = r.json.estimate.sections;
     assert.equal(secs.at(-1).title, 'Same-day fee');
-    assert.equal(secs.at(-1).lines[0].display, '$40');
+    assert.equal(secs.at(-1).lines[0].display, '$20');
+    assert.equal(secs.at(-1).lines[0].wasDisplay, '$40');
     assert.equal(secs.find((x) => x.title === 'Extras').lines[0].display, 'To be confirmed');
     assert.equal(secs.find((x) => x.title === 'Distance fee').lines[0].display, '$10');
-    assert.equal(r.json.estimate.totalDisplay, '$300'); // 250 + $10 distance + $40 same-day; long carry excluded, not guessed
+    assert.equal(r.json.estimate.totalDisplay, '$280'); // 250 + $10 distance + $20 same-day; long carry excluded, not guessed
     assert.ok(r.json.estimate.notes.some((n) => /not included/.test(n)));
   } finally { await s.close(); }
 });
@@ -542,4 +543,20 @@ test('email given: estimate says so and thank-you page tells them to check their
     assert.match((await s.get('/thank-you?type=booked&email=1')).text, /Check your email<\/strong> for your booking confirmation/);
     assert.match((await s.get('/thank-you?type=booked')).text, /Check your email/);
   } finally { await s.close(); }
+});
+
+test('Black Friday banner on every page until Dec 4; estimate shows the discount', async () => {
+  const before = await startServer({ settings: pricedSettings(), now: () => new Date('2026-11-23T18:00:00Z') });
+  try {
+    assert.match((await before.get('/')).text, /class="promo-banner"[\s\S]*15% off all services/);
+    assert.match((await before.get('/prices')).text, /BLACK FRIDAY 15% OFF/i);
+    const r = await before.post('/api/estimate', { service: 'junk', answers: junkAnswers({ load: 'half', locations: ['ground'], items: [], date: '2026-11-24', time: '18:00' }), contact });
+    assert.equal(r.json.estimate.promo.percent, 15);
+    assert.equal(r.json.estimate.promo.beforeDisplay, '$260', '$250 load + $10 distance');
+    assert.equal(r.json.estimate.totalDisplay, '$221', '$260 less 15%');
+  } finally { await before.close(); }
+  const after = await startServer({ settings: pricedSettings() }); // Dec 7 in the tests
+  try {
+    assert.ok(!(await after.get('/')).text.includes('promo-banner'), 'banner gone after Dec 4');
+  } finally { await after.close(); }
 });
