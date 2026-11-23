@@ -52,8 +52,8 @@ function bookingText(lead, settings) {
 
 /** Full details for the owner's email: everything the crew needs before calling. */
 function leadEmail(lead, settings, heading) {
-  const lines = [heading, '', bookingText(lead, settings)];
   const c = lead.contact || {};
+  const lines = [`CUSTOMER: ${c.name || '(no name)'}`, '', heading, '', bookingText(lead, settings)];
   if (c.email) lines.push(`Customer email: ${c.email}`);
   if (lead.estimate) {
     lines.push('', 'Estimate breakdown:');
@@ -267,7 +267,7 @@ function createApi({ store, distance, ai = null, sms = null, mailer = null, noti
       else if (!booked.contact.smsConsent) status = `>>> CONFIRM WITH THIS CUSTOMER: they did not check the box for automatic texts. Call or text ${customerPhone} to confirm. <<<${customerEmailed ? ' (They were emailed a copy.)' : ''}`;
       else status = `>>> TEXT THIS CUSTOMER: they were NOT texted automatically (${sms ? 'the text failed' : 'no text service is set up'}). Text ${customerPhone} to confirm. <<<${customerEmailed ? ' (They were emailed a copy.)' : ''}`;
       const ownerEmailed = await emailOwner(
-        `New booking: ${SERVICE_NAMES[lead.service] || lead.service}, ${cal.formatDate(lead.booking.date)} at ${cal.formatTime(lead.booking.time)}, ${lead.contact.name}`,
+        `New booking: ${lead.contact.name} - ${SERVICE_NAMES[lead.service] || lead.service}, ${cal.formatDate(lead.booking.date)} at ${cal.formatTime(lead.booking.time)}`,
         leadEmail(booked, s2, `A customer just booked on your website.\n${status}`),
       );
       // Optional free "text" alert through the carrier's email-to-text address (e.g. 4697561984@tmomail.net).

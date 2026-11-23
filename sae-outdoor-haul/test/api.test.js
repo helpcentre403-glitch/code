@@ -110,7 +110,8 @@ test('Book This Date emails the owner right away: who, contact info, address, wh
     assert.equal(mails.length, 2, 'owner email + customer receipt the moment they book');
     const m = mails.find((x) => x.to === 'Helpcentre403@gmail.com');
     assert.ok(mails.some((x) => x.to === 'pat@example.com'), 'customer emailed a receipt');
-    assert.equal(m.subject, 'New booking: Landscaping, Sat, Dec 12 at 10:00 AM, Test Customer');
+    assert.equal(m.subject, 'New booking: Test Customer - Landscaping, Sat, Dec 12 at 10:00 AM');
+    assert.ok(m.text.startsWith('CUSTOMER: Test Customer'), 'name is the first line of the email');
     for (const part of ['A customer just booked', 'Test Customer, (214) 555-0100', 'Address: 5 Elm St, Carrollton, TX', 'Large front and back', 'Customer email: pat@example.com', 'Total: $75', '"cityZone": "inside"']) {
       assert.ok(m.text.includes(part), `missing "${part}" in:\n${m.text}`);
     }

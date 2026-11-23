@@ -109,7 +109,7 @@ test('trees: (tree price + service fee) per tree + distance', () => {
 
 test('validation asks instead of guessing', () => {
   const s = defaultSettings();
-  const v = (service, answers, c = { name: 'A', phone: '2145550100' }) => pricing.validate(service, { answers, contact: c }, s).errors.map((e) => e.field);
+  const v = (service, answers, c = { name: 'Al', phone: '2145550100' }) => pricing.validate(service, { answers, contact: c }, s).errors.map((e) => e.field);
   const base = { date: '2026-12-07', time: '17:00', address: '1 Main St, Plano TX', cityZone: 'outside' };
   assert.ok(v('junk', { ...base, whatToGo: '', load: 'full', locations: ['ground'] }).includes('whatToGo'));
   assert.ok(v('junk', { ...base, whatToGo: 'stuff', load: 'full', locations: ['ground'] }).includes('whatToGo'));
@@ -122,7 +122,10 @@ test('validation asks instead of guessing', () => {
   assert.ok(v('landscaping', { ...base, area: 'side', size: 'small' }).includes('area'));
   assert.ok(v('landscaping', { area: 'front', size: 'small' }).includes('address'));
   assert.ok(v('landscaping', { ...base, cityZone: '', area: 'front', size: 'small' }).includes('cityZone'));
-  assert.ok(v('landscaping', { ...base, area: 'front', size: 'small' }, { name: 'A', phone: '555' }).includes('contact.phone'));
+  assert.ok(v('landscaping', { ...base, area: 'front', size: 'small' }, { name: 'Al', phone: '555' }).includes('contact.phone'));
+  assert.ok(v('landscaping', { ...base, area: 'front', size: 'small' }, { name: '', phone: '2145550100' }).includes('contact.name'), 'name required');
+  assert.ok(v('landscaping', { ...base, area: 'front', size: 'small' }, { name: '1', phone: '2145550100' }).includes('contact.name'), 'name needs letters');
+  assert.ok(!v('landscaping', { ...base, area: 'front', size: 'small' }, { name: 'Jo', phone: '2145550100' }).includes('contact.name'));
   assert.equal(pricing.normalizePhone('+1 (469) 756-1984'), '4697561984');
 });
 
