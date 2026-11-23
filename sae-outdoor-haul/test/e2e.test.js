@@ -30,6 +30,7 @@ async function fillContact(section, name = 'Pat Test') {
   await section.locator('.zone-group .chip', { hasText: zone }).click();
   await section.locator('input[name="name"]').fill(name);
   await section.locator('input[name="phone"]').fill('214-555-0100');
+  await section.locator('input[name="email"]').fill('pat@example.com');
 }
 async function slotsOn(section, dateLabel) {
   await section.locator('.date-chip', { hasText: dateLabel }).click();
@@ -98,12 +99,12 @@ test('junk removal: full flow -> estimate breakdown -> Book This Date -> thank y
   for (const s of ['Base price', 'Extras', 'Distance fee', 'This is an estimate. Our crew confirms the final price before work starts.']) assert.ok(text.includes(s), s);
   assert.ok(!text.includes('Same-day fee'));
   assert.equal(await est.locator('button').count(), 1, 'one button only');
-  assert.match(await est.locator('.book-btn').innerText(), /Book This Date\s+We'll text you to confirm/);
+  assert.match(await est.locator('.book-btn').innerText(), /Book This Date\s+We'll email your confirmation and text you to confirm/);
   assert.equal(await sec.locator('input[name="smsConsent"]').isChecked(), false, 'text consent box starts unchecked');
   await est.locator('.book-btn').click();
   await page.waitForURL(/thank-you/);
   assert.match(await page.locator('h1').innerText(), /Got it\. We.ll text you to confirm\./);
-  assert.equal(await page.locator('.email-note').count(), 0, 'no email promise when no email was given');
+  assert.equal(await page.locator('.email-note').count(), 1, 'email is required, so the thank-you page always mentions it');
   assert.equal(await page.locator('main a[href="tel:+14697561984"]').count(), 1);
   assert.equal(await page.locator('main a[href="sms:+14697561984"]').count(), 1);
 

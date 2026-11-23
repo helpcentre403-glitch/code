@@ -69,6 +69,6 @@ async function startServer({ settings, ai = null, sms = null, mailer = null, now
   };
 }
 
-const contact = { name: 'Test Customer', phone: '(214) 555-0100', email: '' };
+const contact = { name: 'Test Customer', phone: '(214) 555-0100', email: 'pat@example.com' };
 
 module.exports = { FIXED_NOW, STUB, startServer, pricedSettings, contact, tmpDir };

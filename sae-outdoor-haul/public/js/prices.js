@@ -68,15 +68,16 @@
       + '<label class="label" for="' + id + '-name">Full name <span class="req">Required</span></label>'
       + '<input id="' + id + '-name" name="name" autocomplete="name" maxlength="100" required aria-required="true" placeholder="First and last name">'
       + '<p class="field-error" data-error="contact.name"></p>'
-      + '<label class="label" for="' + id + '-phone">Mobile phone (we text you to confirm)</label>'
+      + '<label class="label" for="' + id + '-phone">Mobile phone <span class="opt">Optional</span></label>'
       + '<input id="' + id + '-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20">'
       + '<p class="field-error" data-error="contact.phone"></p>'
       + '<label class="consent" for="' + id + '-sms"><input id="' + id + '-sms" type="checkbox" name="smsConsent">'
       + '<span>Text me my booking confirmation, estimate receipt, and appointment updates from ' + config.business.name + '. '
       + 'Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Not required to book. '
       + 'See our <a href="/privacy" target="_blank">Privacy Policy</a> and <a href="/terms#sms" target="_blank">Terms of Service</a>.</span></label>'
-      + '<label class="label" for="' + id + '-email">Email <span class="opt">Optional</span> <small class="hint">We email your booking confirmation and estimate here.</small></label>'
-      + '<input id="' + id + '-email" name="email" type="email" autocomplete="email" maxlength="200">'
+      + '<label class="label" for="' + id + '-email">Email <span class="req">Required</span></label>'
+      + '<p class="hint">We email your booking confirmation and estimate to this address.</p>'
+      + '<input id="' + id + '-email" name="email" type="email" autocomplete="email" maxlength="200" required aria-required="true" placeholder="you@example.com">'
       + '<p class="field-error" data-error="contact.email"></p></fieldset>'
       + '<button type="submit" class="btn btn-accent btn-big btn-block" data-submit>Generate Estimate</button>'
       + '<p class="hint center" data-submit-hint></p>';
@@ -460,15 +461,15 @@
     var bookBtn = el('button', { type: 'button', class: 'btn btn-accent btn-big btn-block book-btn' }, [
       el('span', { text: 'Book This Date' }),
       el('small', { text: config.autoText && r.smsConsent
-        ? (r.emailGiven ? "We'll text and email your confirmation automatically" : "We'll text you automatically")
-        : (r.emailGiven ? "We'll email your confirmation and text you to confirm" : "We'll text you to confirm") }),
+        ? "We'll text and email your confirmation automatically"
+        : "We'll email your confirmation and text you to confirm" }),
     ]);
     var msg = el('p', { class: 'hint', 'aria-live': 'polite' });
     bookBtn.addEventListener('click', function () {
       bookBtn.disabled = true;
       api('/api/leads/' + encodeURIComponent(r.leadId) + '/book', {}).then(function (x) {
         if (x.status === 'ok' && window.saeTrack) window.saeTrack('Schedule', { value: r.estimate.total.min, currency: 'USD' });
-        var thanks = '/thank-you?type=booked' + (r.emailGiven ? '&email=1' : '');
+        var thanks = '/thank-you?type=booked&email=1';
         if (x.status === 'ok') setTimeout(function () { window.location.href = thanks; }, window.saeTrack ? 300 : 0);
         else { bookBtn.disabled = false; msg.textContent = x.message; refreshAvailability(); }
       });

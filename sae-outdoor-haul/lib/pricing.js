@@ -108,11 +108,15 @@ function validate(service, body, settings) {
     ask('cityZone', `Tell us whether the address is inside or outside ${settings.business.freeCities[0] || 'the city'}.`);
   }
 
+  // Phone is optional. If one is typed, it must be a valid 10-digit US number. Texts need a phone number.
+  const rawPhone = str(c.phone, 40);
   data.contact = { name: str(c.name, 100), phone: normalizePhone(c.phone), email: str(c.email, 200) || null, smsConsent: c.smsConsent === true };
+  if (!data.contact.phone) data.contact.smsConsent = false;
   if (!data.contact.name) ask('contact.name', 'Enter your full name so we know who we are meeting.');
   else if (data.contact.name.replace(/[^A-Za-z]/g, '').length < 2) ask('contact.name', 'Enter your full name (at least 2 letters).');
-  if (!data.contact.phone) ask('contact.phone', 'Enter a 10-digit mobile number so we can text you.');
-  if (data.contact.email && !EMAIL_RE.test(data.contact.email)) ask('contact.email', 'That email address does not look right. Fix it or leave it blank.');
+  if (rawPhone && !data.contact.phone) ask('contact.phone', 'That phone number does not look right. Enter a 10-digit number, or leave it blank.');
+  if (!data.contact.email) ask('contact.email', 'Enter your email so we can send your booking confirmation and estimate.');
+  else if (!EMAIL_RE.test(data.contact.email)) ask('contact.email', 'That email address does not look right. Check it and try again.');
 
   return { errors, data };
 }

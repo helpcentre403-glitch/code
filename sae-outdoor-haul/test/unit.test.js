@@ -109,7 +109,7 @@ test('trees: (tree price + service fee) per tree + distance', () => {
 
 test('validation asks instead of guessing', () => {
   const s = defaultSettings();
-  const v = (service, answers, c = { name: 'Al', phone: '2145550100' }) => pricing.validate(service, { answers, contact: c }, s).errors.map((e) => e.field);
+  const v = (service, answers, c = { name: 'Al', phone: '2145550100', email: 'al@example.com' }) => pricing.validate(service, { answers, contact: c }, s).errors.map((e) => e.field);
   const base = { date: '2026-12-07', time: '17:00', address: '1 Main St, Plano TX', cityZone: 'outside' };
   assert.ok(v('junk', { ...base, whatToGo: '', load: 'full', locations: ['ground'] }).includes('whatToGo'));
   assert.ok(v('junk', { ...base, whatToGo: 'stuff', load: 'full', locations: ['ground'] }).includes('whatToGo'));
@@ -353,4 +353,14 @@ test('public calendar shows booked times (no customer info) and keeps fully book
   assert.deepEqual(wed.slots, []);
   assert.equal(wed.booked.length, 4);
   assert.equal(cal.isSlotAvailable(sch, booked, '2026-12-08', '18:00', FIXED_NOW), false);
+});
+
+test('phone is optional; a typed but invalid phone is flagged; no text consent without a phone', () => {
+  const s = defaultSettings();
+  const base = { date: '2026-12-07', time: '17:00', address: '1 Main St, Plano TX', cityZone: 'outside' };
+  const errs = (c) => pricing.validate('landscaping', { answers: { ...base, area: 'front', size: 'small' }, contact: c }, s).errors.map((e) => e.field);
+  assert.ok(!errs({ name: 'Al', email: 'al@example.com' }).includes('contact.phone'), 'blank phone is fine');
+  assert.ok(errs({ name: 'Al', email: 'al@example.com', phone: '555' }).includes('contact.phone'), 'bad phone flagged');
+  const ok = pricing.validate('landscaping', { answers: { ...base, area: 'front', size: 'small' }, contact: { name: 'Al', email: 'al@example.com', smsConsent: true } }, s);
+  assert.equal(ok.data.contact.smsConsent, false, 'consent needs a phone number');
 });
