@@ -77,60 +77,6 @@
     </div>
   </section>
 
-  <!-- ============ LANDSCAPING ============ -->
-  <section class="section section-alt price-section" id="landscaping">
-    <div class="wrap narrow">
-      <h2 class="section-title">Landscaping</h2>
-      <form class="quote-form" data-service="landscaping" novalidate>
-        <fieldset class="step">
-          <legend><span class="num">1</span> Which area?</legend>
-          <div class="chip-group" role="radiogroup" aria-label="Area">
-            <label class="chip"><input type="radio" name="area" value="front"><span>Front yard</span></label>
-            <label class="chip"><input type="radio" name="area" value="back"><span>Back yard</span></label>
-            <label class="chip"><input type="radio" name="area" value="both"><span>Both</span></label>
-          </div>
-          <p class="field-error" data-error="area"></p>
-        </fieldset>
-        <fieldset class="step">
-          <legend><span class="num">2</span> Lawn size</legend>
-          <p class="hint">Square footage counts mowable grass only. Price is per visit.</p>
-          <div class="size-list" data-sizes role="radiogroup" aria-label="Lawn size"><p class="hint">Choose an area first.</p></div>
-          <p class="field-error" data-error="size"></p>
-        </fieldset>
-        <div data-common data-step-start="3"></div>
-      </form>
-      <div class="result" data-result="landscaping" aria-live="polite"></div>
-    </div>
-  </section>
-
-  <!-- ============ CHRISTMAS TREES ============ -->
-  <section class="section price-section" id="trees">
-    <div class="wrap narrow">
-      <h2 class="section-title">Christmas Trees</h2>
-      <form class="quote-form" data-service="trees" novalidate>
-        <fieldset class="step">
-          <legend><span class="num">1</span> How many trees?</legend>
-          <div class="slider-wrap">
-            <output class="tree-count" data-tree-count aria-live="polite">0</output>
-            <input type="range" name="count" min="0" max="3" step="1" value="0" aria-label="Number of trees" data-tree-slider>
-            <div class="slider-scale" aria-hidden="true"><span>0</span><span>1</span><span>2</span><span>3</span></div>
-          </div>
-          <p class="field-error" data-error="count"></p>
-        </fieldset>
-        <fieldset class="step">
-          <legend><span class="num">2</span> Size and service for each tree</legend>
-          <div class="callout">
-            <strong>You pay for the tree too.</strong>
-            <p>Each tree costs the tree's price <em>plus</em> our service fee for delivery, installation, or both. Your estimate includes an estimated tree price, and we'll let you know exactly how much it will cost.</p>
-            <p class="hint" data-tree-price-note></p>
-          </div>
-          <div data-tree-list><p class="hint">Drag the slider to choose how many trees.</p></div>
-        </fieldset>
-        <div data-common data-step-start="3"></div>
-      </form>
-      <div class="result" data-result="trees" aria-live="polite"></div>
-    </div>
-  </section>
   <!-- ============ OUR WORK + REVIEWS ============ -->
   <section class="section section-alt" id="our-work">
     <div class="wrap">
@@ -193,6 +139,61 @@
             <p class="review-by">Andrea P.</p>
           </article>
       </div>
+    </div>
+  </section>
+
+  <!-- ============ LANDSCAPING ============ -->
+  <section class="section section-alt price-section" id="landscaping">
+    <div class="wrap narrow">
+      <h2 class="section-title">Landscaping</h2>
+      <form class="quote-form" data-service="landscaping" novalidate>
+        <fieldset class="step">
+          <legend><span class="num">1</span> Which area?</legend>
+          <div class="chip-group" role="radiogroup" aria-label="Area">
+            <label class="chip"><input type="radio" name="area" value="front"><span>Front yard</span></label>
+            <label class="chip"><input type="radio" name="area" value="back"><span>Back yard</span></label>
+            <label class="chip"><input type="radio" name="area" value="both"><span>Both</span></label>
+          </div>
+          <p class="field-error" data-error="area"></p>
+        </fieldset>
+        <fieldset class="step">
+          <legend><span class="num">2</span> Lawn size</legend>
+          <p class="hint">Square footage counts mowable grass only. Price is per visit.</p>
+          <div class="size-list" data-sizes role="radiogroup" aria-label="Lawn size"><p class="hint">Choose an area first.</p></div>
+          <p class="field-error" data-error="size"></p>
+        </fieldset>
+        <div data-common data-step-start="3"></div>
+      </form>
+      <div class="result" data-result="landscaping" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ============ CHRISTMAS TREES ============ -->
+  <section class="section price-section" id="trees">
+    <div class="wrap narrow">
+      <h2 class="section-title">Christmas Trees</h2>
+      <form class="quote-form" data-service="trees" novalidate>
+        <fieldset class="step">
+          <legend><span class="num">1</span> How many trees?</legend>
+          <div class="slider-wrap">
+            <output class="tree-count" data-tree-count aria-live="polite">0</output>
+            <input type="range" name="count" min="0" max="3" step="1" value="0" aria-label="Number of trees" data-tree-slider>
+            <div class="slider-scale" aria-hidden="true"><span>0</span><span>1</span><span>2</span><span>3</span></div>
+          </div>
+          <p class="field-error" data-error="count"></p>
+        </fieldset>
+        <fieldset class="step">
+          <legend><span class="num">2</span> Size and service for each tree</legend>
+          <div class="callout">
+            <strong>You pay for the tree too.</strong>
+            <p>Each tree costs the tree's price <em>plus</em> our service fee for delivery, installation, or both. Your estimate includes an estimated tree price, and we'll let you know exactly how much it will cost.</p>
+            <p class="hint" data-tree-price-note></p>
+          </div>
+          <div data-tree-list><p class="hint">Drag the slider to choose how many trees.</p></div>
+        </fieldset>
+        <div data-common data-step-start="3"></div>
+      </form>
+      <div class="result" data-result="trees" aria-live="polite"></div>
     </div>
   </section>
 </main>
