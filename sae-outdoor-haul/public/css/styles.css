@@ -347,3 +347,19 @@ button, input, select, textarea { color: var(--ink); }
 .promo-banner strong { letter-spacing: .02em; }
 .bd-save { color: var(--good); font-weight: 800; }
 .bd-line s.was { color: var(--ink-2); margin-right: 6px; }
+
+/* Our work carousel and reviews */
+.carousel { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 12px; scrollbar-width: thin; }
+.carousel:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+.work-slide { flex: 0 0 min(82%, 340px); margin: 0; scroll-snap-align: start; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.work-slide img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block; }
+.work-slide figcaption { padding: 12px 14px; font-weight: 700; color: var(--ink); }
+.reviews-title { margin-top: 44px; }
+.rating-line { margin: 0 0 16px; color: var(--ink-2); }
+.review-grid { display: grid; gap: 14px; }
+@media (min-width: 760px) { .review-grid { grid-template-columns: repeat(2, 1fr); } }
+.review { background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); border-left: 4px solid var(--accent); }
+.review .stars { color: var(--accent); font-size: 1.1rem; letter-spacing: 2px; }
+.review h3 { font-size: 1.05rem; margin: 6px 0 8px; }
+.review p { color: var(--ink-2); margin: 0 0 8px; }
+.review .review-by { color: var(--ink); font-weight: 800; margin: 0; }
