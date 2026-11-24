@@ -545,7 +545,7 @@ test('email given: estimate says so and thank-you page tells them to check their
   } finally { await s.close(); }
 });
 
-test('Black Friday banner on every page until Dec 4; estimate shows the discount', async () => {
+test('Black Friday banner on every page until Dec 1; estimate shows the discount', async () => {
   const before = await startServer({ settings: pricedSettings(), now: () => new Date('2026-11-23T18:00:00Z') });
   try {
     assert.match((await before.get('/')).text, /class="promo-banner"[\s\S]*15% off all services/);
@@ -557,6 +557,6 @@ test('Black Friday banner on every page until Dec 4; estimate shows the discount
   } finally { await before.close(); }
   const after = await startServer({ settings: pricedSettings() }); // Dec 7 in the tests
   try {
-    assert.ok(!(await after.get('/')).text.includes('promo-banner'), 'banner gone after Dec 4');
+    assert.ok(!(await after.get('/')).text.includes('promo-banner'), 'banner gone after Dec 1');
   } finally { await after.close(); }
 });

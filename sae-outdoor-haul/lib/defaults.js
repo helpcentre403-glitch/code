@@ -37,7 +37,7 @@ function holidayDates() {
 function defaultSettings() {
   return {
     // Limited-time promotion: 15% off the whole estimate through the end date (Dallas time, inclusive).
-    promotion: { label: 'Black Friday 15% off', percent: 15, endDate: '2026-12-04' },
+    promotion: { label: 'Black Friday 15% off', percent: 15, endDate: '2026-12-01' },
     business: {
       name: 'SAE Outdoor and Haul',
       phone: '4697561984', // provided by owner

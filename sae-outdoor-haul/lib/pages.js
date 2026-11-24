@@ -44,7 +44,8 @@ function distanceSentence(settings) {
 function promoBanner(settings, now = new Date()) {
   if (!pricing.promotionActive(settings, now)) return '';
   const p = settings.promotion;
-  return `<div class="promo-banner" role="note"><strong>${esc(p.label.toUpperCase())}:</strong> ${esc(p.percent)}% off all services. Book by December 4.</div>`;
+  const endLabel = new Date(`${p.endDate}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' });
+  return `<div class="promo-banner" role="note"><strong>${esc(p.label.toUpperCase())}:</strong> ${esc(p.percent)}% off all services. Book by ${esc(endLabel)}.</div>`;
 }
 
 function pageTokens(settings, now = new Date()) {

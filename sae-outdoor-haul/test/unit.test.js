@@ -367,14 +367,14 @@ test('phone is optional; a typed but invalid phone is flagged; no text consent w
   assert.equal(ok.data.contact.smsConsent, false, 'consent needs a phone number');
 });
 
-test('Black Friday: 15% off the whole estimate through Dec 4 (Dallas time), with the savings shown', () => {
+test('Black Friday: 15% off the whole estimate through Dec 1 (Dallas time), with the savings shown', () => {
   const st = pricedSettings();
-  const last = computeEstimate(junk({ load: 'quarter' }), st, dist(3, 'Carrollton', true), { now: new Date('2026-12-05T05:59:00Z') }); // Dec 4, 11:59 PM Dallas
-  assert.ok(last.promo, 'active on Dec 4 Dallas time');
+  const last = computeEstimate(junk({ load: 'quarter' }), st, dist(3, 'Carrollton', true), { now: new Date('2026-12-02T05:59:00Z') }); // Dec 1, 11:59 PM Dallas
+  assert.ok(last.promo, 'active on Dec 1 Dallas time');
   assert.equal(last.promo.percent, 15);
   assert.deepEqual(range(last.total), [128, 128], '$150 less 15% = $127.50, rounded to $128');
   assert.equal(last.promo.savedMin, 22);
-  const after = computeEstimate(junk({ load: 'quarter' }), st, dist(3, 'Carrollton', true), { now: new Date('2026-12-05T06:01:00Z') });
+  const after = computeEstimate(junk({ load: 'quarter' }), st, dist(3, 'Carrollton', true), { now: new Date('2026-12-02T06:01:00Z') });
   assert.equal(after.promo, null, 'off on Dec 5 Dallas time');
   assert.deepEqual(range(after.total), [150, 150]);
   assert.equal(promotionActive(st, new Date('2026-11-23T18:00:00Z')), true);
