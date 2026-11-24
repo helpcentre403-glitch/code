@@ -262,9 +262,65 @@
   }
   document.querySelectorAll('[data-save]').forEach(function (b) { b.addEventListener('click', save); });
 
+  // ---------- Website traffic ----------
+  var SOURCE_LABELS = { Direct: 'Direct (typed the address or no referrer)' };
+  // Widths are set as DOM properties, not inline style attributes, because the site's CSP blocks inline styles.
+  function fillBar(pct) { var f = h('span', { class: 'bar-fill' }); f.style.width = pct + '%'; return f; }
+  function barList(host, rows, total) {
+    host.innerHTML = '';
+    if (!rows.length) { host.appendChild(h('p', { class: 'hint', text: 'No visits yet.' })); return; }
+    rows.slice(0, 12).forEach(function (r) {
+      var pct = total ? Math.round((r.count / total) * 100) : 0;
+      host.appendChild(h('div', { class: 'bar-row' }, [
+        h('span', { class: 'bar-name', text: SOURCE_LABELS[r.name] || r.name }),
+        h('span', { class: 'bar-track' }, [fillBar(pct)]),
+        h('span', { class: 'bar-count', text: r.count + ' (' + pct + '%)' }),
+      ]));
+    });
+  }
+  function loadTraffic() {
+    return fetch('/api/admin/analytics?days=30', { credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw new Error('analytics'); return r.json(); }).then(function (a) {
+      var set = function (sel, v) { document.querySelector(sel).textContent = v; };
+      set('[data-an-active]', a.activeNow);
+      set('[data-an-today]', a.today.visitors);
+      set('[data-an-today-views]', a.today.views + ' page views');
+      set('[data-an-7]', a.last7.visitors);
+      set('[data-an-7-views]', a.last7.views + ' page views');
+      set('[data-an-30]', a.range.visitors);
+      set('[data-an-30-views]', a.range.views + ' page views');
+      var sourceTotal = a.sources.reduce(function (n, r) { return n + r.count; }, 0);
+      var pageTotal = a.pages.reduce(function (n, r) { return n + r.count; }, 0);
+      barList(document.querySelector('[data-an-sources]'), a.sources, sourceTotal);
+      barList(document.querySelector('[data-an-pages]'), a.pages, pageTotal);
+      var daily = document.querySelector('[data-an-daily]');
+      daily.innerHTML = '';
+      var last14 = a.daily.slice(-14);
+      var max = Math.max.apply(null, [1].concat(last14.map(function (d) { return d.views; })));
+      last14.forEach(function (d) {
+        var col = h('span', { class: 'bar-col' });
+        col.style.height = Math.max(2, Math.round((d.views / max) * 100)) + '%';
+        daily.appendChild(h('div', { class: 'bar-day', title: d.date + ': ' + d.visitors + ' visitors, ' + d.views + ' views' }, [
+          col,
+          h('span', { class: 'bar-label', text: d.date.slice(5) }),
+        ]));
+      });
+      var recent = document.querySelector('[data-an-recent]');
+      recent.innerHTML = '';
+      if (!a.recentVisits.length) recent.appendChild(h('p', { class: 'hint', text: 'No visits yet.' }));
+      a.recentVisits.forEach(function (v) {
+        recent.appendChild(h('div', { class: 'visit-row' }, [
+          h('span', { text: new Date(v.at).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }),
+          ' · ', h('strong', { text: v.source }), ' · ', h('span', { text: v.page === '/' ? 'Home' : v.page }),
+        ]));
+      });
+    }).catch(function () { /* keep the last numbers on screen */ });
+  }
+  document.querySelector('[data-an-refresh]').addEventListener('click', loadTraffic);
+  setInterval(function () { if (document.visibilityState === 'visible') loadTraffic(); }, 30000);
+
   function renderAll() { renderHours(); renderRates(); renderBusiness(); }
   function loadAll() {
-    return api('GET', '/api/admin/settings').then(function (s) { S = s; renderAll(); return Promise.all([loadCalendar(), loadLeads()]); })
+    return api('GET', '/api/admin/settings').then(function (s) { S = s; renderAll(); return Promise.all([loadCalendar(), loadLeads(), loadTraffic()]); })
       .then(function () { document.body.setAttribute('data-ready', 'true'); })
       .catch(function () { say('Could not load admin data.', true); });
   }

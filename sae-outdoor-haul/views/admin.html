@@ -9,11 +9,31 @@
 <header class="site-header"><div class="wrap header-inner">
   <a class="brand" href="/"><span>{{BUSINESS_NAME}} Admin</span></a>
   <nav class="nav admin-tabs" aria-label="Admin">
-    <a href="#leads">Leads</a><a href="#calendar">Calendar</a><a href="#hours">Hours</a><a href="#rates">Rates</a><a href="#business">Business</a>
+    <a href="#traffic">Traffic</a><a href="#leads">Leads</a><a href="#calendar">Calendar</a><a href="#hours">Hours</a><a href="#rates">Rates</a><a href="#business">Business</a>
   </nav>
 </div></header>
 <main id="main" class="wrap">
   <p class="admin-status" data-status aria-live="polite"></p>
+
+  <section class="admin-card" id="traffic">
+    <h2>Website traffic</h2>
+    <p class="hint">Counts visits to the public pages. Visitors are counted once per day per device, and no IP addresses are stored. To track Facebook or Instagram ads reliably, add <code>?utm_source=facebook</code> to the ad link.</p>
+    <div class="stat-grid">
+      <div class="stat"><span class="stat-num" data-an-active>0</span><span class="stat-label">Active now (last 3 min)</span></div>
+      <div class="stat"><span class="stat-num" data-an-today>0</span><span class="stat-label">Visitors today</span><small data-an-today-views></small></div>
+      <div class="stat"><span class="stat-num" data-an-7>0</span><span class="stat-label">Visitors, last 7 days</span><small data-an-7-views></small></div>
+      <div class="stat"><span class="stat-num" data-an-30>0</span><span class="stat-label">Visitors, last 30 days</span><small data-an-30-views></small></div>
+    </div>
+    <div class="grid-2">
+      <div><h3>Where visitors came from (30 days)</h3><div data-an-sources></div></div>
+      <div><h3>Pages viewed (30 days)</h3><div data-an-pages></div></div>
+    </div>
+    <h3>Last 14 days</h3>
+    <div class="bars" data-an-daily></div>
+    <h3>Recent visits</h3>
+    <div data-an-recent></div>
+    <button class="btn btn-light btn-small" type="button" data-an-refresh>Refresh</button>
+  </section>
 
   <section class="admin-card" id="leads">
     <h2>Leads</h2>

@@ -12,6 +12,7 @@ const { createAi } = require('./lib/ai');
 const { createSms } = require('./lib/sms');
 const { createMailer } = require('./lib/mailer');
 const { createAddressSuggester } = require('./lib/address');
+const { createAnalytics } = require('./lib/analytics');
 const { defaultSettings } = require('./lib/defaults');
 
 const VIEWS = path.join(__dirname, 'views');
@@ -71,6 +72,8 @@ function createApp(opts = {}) {
     notifyPhone: process.env.OWNER_NOTIFY_PHONE || null, notifyEmail: process.env.OWNER_NOTIFY_EMAIL || null, textEmail: process.env.OWNER_TEXT_EMAIL || null,
   });
   const send = (res, r) => res.status(r.status).json(r.json);
+  const analytics = opts.analytics || createAnalytics({ dataDir: opts.dataDir || process.env.DATA_DIR || path.join(__dirname, 'data'), now });
+  const visitorInfo = (req) => ({ ip: req.ip, userAgent: req.get('user-agent') || '' });
 
   // ---------- Admin auth (HTTP Basic, user "admin") ----------
   const failedLogins = new Map(); // ip -> [timestamps]
@@ -91,7 +94,12 @@ function createApp(opts = {}) {
   }
 
   // ---------- Pages ----------
-  const page = (name) => (req, res) => res.type('html').send(render(name, store.getSettings(), now()));
+  const page = (name) => (req, res) => {
+    try {
+      analytics.recordView({ path: req.path, query: req.query, referrer: req.get('referer') || '', ownHost: req.hostname, ...visitorInfo(req) });
+    } catch (e) { log.warn && log.warn('analytics', e.message); }
+    res.type('html').send(render(name, store.getSettings(), now()));
+  };
   app.get('/', page('index'));
   app.get('/prices', page('prices'));
   app.get('/thank-you', (req, res) => {
@@ -108,6 +116,10 @@ function createApp(opts = {}) {
   // ---------- Public API ----------
   const noStore = (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); };
   app.get('/api/config', (req, res) => send(res, api.config()));
+  app.post('/api/heartbeat', rateLimiter({ windowMs: 60 * 1000, max: 30 }), (req, res) => {
+    try { analytics.heartbeat({ path: String((req.body && req.body.path) || ''), ...visitorInfo(req) }); } catch (e) { /* ignore */ }
+    res.status(204).end();
+  });
   app.get('/api/availability', noStore, (req, res) => send(res, api.availability()));
   const addresses = opts.addressSuggester || createAddressSuggester({ googleKey: process.env.GOOGLE_MAPS_API_KEY, log });
   app.get('/api/address-suggest', rateLimiter({ windowMs: 10 * 60 * 1000, max: 300 }), async (req, res, next) => {
@@ -134,6 +146,10 @@ function createApp(opts = {}) {
   app.get('/api/admin/calendar', (req, res) => send(res, api.calendar(req.query)));
   app.post('/api/admin/calendar', (req, res) => send(res, api.calendarAction(req.body)));
   app.get('/api/admin/leads', (req, res) => send(res, api.leads()));
+  app.get('/api/admin/analytics', (req, res) => {
+    const days = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), 120);
+    res.json(analytics.summary({ days }));
+  });
   app.post('/api/admin/test-text', async (req, res, next) => {
     try { send(res, await api.testText()); } catch (e) { next(e); }
   });
