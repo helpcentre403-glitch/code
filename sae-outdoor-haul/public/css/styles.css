@@ -351,9 +351,9 @@ button, input, select, textarea { color: var(--ink); }
 /* Our work carousel and reviews */
 .carousel { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 12px; scrollbar-width: thin; }
 .carousel:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
-.work-slide { flex: 0 0 min(82%, 340px); margin: 0; scroll-snap-align: start; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.work-slide { flex: 0 0 min(46%, 170px); margin: 0; scroll-snap-align: start; background: var(--card); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
 .work-slide img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block; }
-.work-slide figcaption { padding: 12px 14px; font-weight: 700; color: var(--ink); }
+.work-slide figcaption { padding: 6px 8px; font-weight: 700; font-size: .72rem; line-height: 1.25; color: var(--ink); }
 .reviews-title { margin-top: 44px; }
 .rating-line { margin: 0 0 16px; color: var(--ink-2); }
 .review-grid { display: grid; gap: 14px; }
