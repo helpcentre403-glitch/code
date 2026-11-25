@@ -1,0 +1,55 @@
+<style>
+.nyr-bf{background:#fff;border-radius:14px;padding:16px 18px 18px;margin:14px 0 16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #eef0f6;font-family:inherit;color:#222}
+.nyr-bf-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.nyr-bf-title{font-size:24px;font-weight:800;margin:0;line-height:1.15;color:#3a3a3a}
+.nyr-bf-off{display:flex;align-items:baseline;gap:6px;color:#e06d68;font-weight:800;line-height:1}
+.nyr-bf-off small{font-size:15px;letter-spacing:.04em}
+.nyr-bf-off b{font-size:34px}
+.nyr-bf-gift{display:flex;align-items:flex-start;gap:10px;margin:12px 0 14px}
+.nyr-bf-gift-ico{font-size:28px;line-height:1}
+.nyr-bf-perk{font-size:16px;font-weight:700;color:#8a3d4f;margin:0 0 4px}
+.nyr-bf-line{font-size:13px;line-height:1.5;margin:0;color:#222}
+.nyr-bf-timer{display:flex;gap:10px}
+.nyr-bf-box{background:#57b39f;color:#fff;border-radius:8px;min-width:58px;padding:8px 6px 6px;text-align:center}
+.nyr-bf-box b{display:block;font-size:24px;font-weight:800;line-height:1}
+.nyr-bf-box span{display:block;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
+@media(max-width:420px){.nyr-bf-title{font-size:20px}.nyr-bf-off b{font-size:28px}.nyr-bf-box{min-width:52px}.nyr-bf-box b{font-size:21px}}
+</style>
+<div class="nyr-bf" data-end="2026-11-30T23:59:59-06:00">
+  <div class="nyr-bf-top">
+    <p class="nyr-bf-title">Black Friday Sale</p>
+    <div class="nyr-bf-off"><small>UP TO</small><b>50% OFF</b></div>
+  </div>
+  <div class="nyr-bf-gift">
+    <div class="nyr-bf-gift-ico">🎁</div>
+    <div>
+      <p class="nyr-bf-perk">Free Gift</p>
+      <p class="nyr-bf-line">The Hive – Handbook for parents</p>
+      <p class="nyr-bf-line">Free with your Busy Bee ($30 value)</p>
+    </div>
+  </div>
+  <div class="nyr-bf-timer">
+    <div class="nyr-bf-box"><b data-u="d">00</b><span>Days</span></div>
+    <div class="nyr-bf-box"><b data-u="h">00</b><span>Hours</span></div>
+    <div class="nyr-bf-box"><b data-u="m">00</b><span>Min</span></div>
+    <div class="nyr-bf-box"><b data-u="s">00</b><span>Sec</span></div>
+  </div>
+</div>
+<script>
+(function(){
+  function pad(n){return (n<10?'0':'')+n}
+  function tick(){
+    var els=document.querySelectorAll('.nyr-bf[data-end]');
+    for(var i=0;i<els.length;i++){
+      var el=els[i];
+      var left=new Date(el.getAttribute('data-end')).getTime()-Date.now();
+      if(!(left>0)){el.style.display='none';continue}
+      var s=Math.floor(left/1000);
+      var v={d:Math.floor(s/86400),h:Math.floor(s%86400/3600),m:Math.floor(s%3600/60),s:s%60};
+      for(var k in v){var b=el.querySelector('[data-u="'+k+'"]');if(b)b.textContent=pad(v[k])}
+    }
+  }
+  tick();
+  if(!window.__nyrBfTimer){window.__nyrBfTimer=setInterval(tick,1000)}
+})();
+</script>
