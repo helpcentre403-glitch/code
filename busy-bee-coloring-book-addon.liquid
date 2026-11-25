@@ -1,0 +1,36 @@
+{%- assign cb = all_products['a-z-math-coloring-book-pre-k-to-3rd-grade'] -%}
+{%- assign cbv = cb.selected_or_first_available_variant -%}
+{%- if cb != blank and cbv.available -%}
+<style>
+.nyr-ao{display:flex;align-items:center;gap:12px;border:1.5px dashed #6c7ba2;border-radius:10px;padding:10px 12px;margin:4px 0 14px;background:#f7f8fc;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.nyr-ao.on{border-style:solid;background:#eef1f9}
+.nyr-ao input{position:absolute;opacity:0;pointer-events:none}
+.nyr-ao-box{flex:0 0 22px;width:22px;height:22px;border:2px solid #6c7ba2;border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;line-height:1}
+.nyr-ao.on .nyr-ao-box{background:#6c7ba2}
+.nyr-ao-img{flex:0 0 46px;width:46px;height:46px;border-radius:8px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;font-size:24px}
+.nyr-ao-img img{width:100%;height:100%;object-fit:cover;display:block}
+.nyr-ao-txt{flex:1 1 auto;min-width:0}
+.nyr-ao-t{font-size:13px;font-weight:700;color:#000;margin:0 0 2px;line-height:1.3}
+.nyr-ao-s{font-size:11px;color:#555;margin:0;line-height:1.35}
+.nyr-ao-p{flex:0 0 auto;text-align:right;line-height:1.2}
+.nyr-ao-p b{display:block;font-size:15px;color:#6c7ba2}
+.nyr-ao-p s{font-size:11px;color:#888}
+</style>
+<label class="nyr-ao" id="nyrAoWrap">
+  <input type="checkbox" id="nyrAddon" data-variant="{{ cbv.id }}">
+  <span class="nyr-ao-box" aria-hidden="true">✓</span>
+  <span class="nyr-ao-img">{%- if cb.featured_image -%}<img src="{{ cb.featured_image | image_url: width: 120 }}" alt="{{ cb.title | escape }}" width="46" height="46" loading="lazy">{%- else -%}📚{%- endif -%}</span>
+  <span class="nyr-ao-txt">
+    <p class="nyr-ao-t">Add the A–Z + Math Coloring Book</p>
+    <p class="nyr-ao-s">Instant PDF download · Pre-K to 3rd grade</p>
+  </span>
+  <span class="nyr-ao-p"><b>{{ cbv.price | money }}</b>{%- if cbv.compare_at_price > cbv.price -%}<s>{{ cbv.compare_at_price | money }}</s>{%- endif -%}</span>
+</label>
+<script>
+(function(){
+  var w=document.getElementById('nyrAoWrap'),c=document.getElementById('nyrAddon');
+  if(!w||!c||w.__nyrAo)return;w.__nyrAo=1;
+  c.addEventListener('change',function(){w.classList.toggle('on',c.checked)});
+})();
+</script>
+{%- endif -%}
