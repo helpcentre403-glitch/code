@@ -1,5 +1,5 @@
 {%- comment -%} Trust badge under "Your cart". tp_img = badge image URL from Shopify Files. tp_url = your Trustpilot page (optional, makes it clickable). {%- endcomment -%}
-{%- assign tp_img = '' -%}
+{%- assign tp_img = 'https://cdn.shopify.com/s/files/1/0633/8307/6977/files/Screenshot_2026-11-25_at_10.48.10_PM.png?v=1795668496' -%}
 {%- assign tp_url = '' -%}
 {%- if tp_img != blank -%}
 <style>
@@ -8,7 +8,7 @@
 </style>
 <div class="nyr-tp">
   {%- if tp_url != blank -%}<a href="{{ tp_url }}" target="_blank" rel="noopener">{%- endif -%}
-  <img src="{{ tp_img }}" alt="Trustpilot rating 4.8 out of 5, based on over 190 reviews" width="300" height="130" loading="lazy">
+  <img src="{{ tp_img }}" alt="Trustpilot rating 4.8 out of 5, based on over 190 reviews" width="300" height="77" loading="lazy">
   {%- if tp_url != blank -%}</a>{%- endif -%}
 </div>
 {%- endif -%}
