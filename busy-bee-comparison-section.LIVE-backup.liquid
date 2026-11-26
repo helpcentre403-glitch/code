@@ -1,0 +1,86 @@
+<style>
+.nyc{background:transparent;padding:28px 16px;max-width:720px;margin:0 auto;color:#222;font-family:inherit}
+.nyc-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#1fbfa6;font-weight:600;margin:0 0 6px}
+.nyc h2{font-size:24px;font-weight:700;margin:0 0 6px;line-height:1.25;color:#222}
+.nyc-sub{font-size:14px;color:#6b6b6b;margin:0 0 18px;line-height:1.5}
+.nyc table{width:100%;border-collapse:collapse;background:#fff;font-size:14px}
+.nyc th,.nyc td{padding:12px 14px;border-bottom:1px solid #ececec;text-align:left;vertical-align:middle}
+.nyc th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6b6b6b;font-weight:600}
+.nyc .c{text-align:center;width:22%}
+.nyc .brand{background:#fff;color:#1fbfa6;font-weight:700}
+.nyc .ic{display:inline-block;width:22px;height:22px;line-height:22px;border-radius:50%;font-size:13px;font-weight:700;text-align:center}
+.nyc .yes{background:#1fbfa6;color:#fff}
+.nyc .no{border:1px solid #bbb;color:#999}
+.nyc-note{margin-top:16px;background:#fff;border:1px solid #ececec;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.5}
+.nyc-proof{margin:12px 0 0;font-size:13px;color:#6b6b6b;text-align:center}
+@media(max-width:600px){.nyc table{font-size:13px}.nyc th,.nyc td{padding:10px 8px}}
+.nyc-help-wrap{position:relative;text-align:right;margin:4px 0 10px}
+.nyc-help-btn{background:#fff;border:1px solid #1fbfa6;color:#1fbfa6;font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px;cursor:pointer;font-family:inherit}
+.nyc-help-pop{position:absolute;right:0;top:calc(100% + 8px);width:min(320px,90vw);background:#fff;border:1px solid #e5e5e5;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.12);text-align:left;padding:14px 16px 12px;font-size:13px;color:#222;line-height:1.45;z-index:50}
+.nyc-help-pop[hidden]{display:none}
+.nyc-help-title{font-weight:700;font-size:14px;margin:0 22px 8px 0}
+.nyc-help-pop dl{margin:0}
+.nyc-help-pop dt{font-weight:700;margin-top:8px}
+.nyc-help-pop dd{margin:2px 0 0 0;color:#444}
+.nyc-help-x{position:absolute;top:6px;right:8px;background:none;border:0;font-size:18px;line-height:1;color:#888;cursor:pointer;padding:4px}
+</style>
+<section class="nyc">
+<p class="nyc-eyebrow">Why parents choose Noyré</p>
+<h2>Why Is  Noyre More Expensive?</h2>
+<p class="nyc-sub">See how a Noyré board compares with the typical toddler boards on the market.</p>
+<table>
+<thead><tr><th></th><th class="c brand">Noyré</th><th class="c">Typical boards</th></tr></thead>
+<tbody>
+<tr><td>Lots to do in one board</td><td class="c brand"><span class="ic yes">✓</span></td><td class="c"><span class="ic no">✕</span></td></tr>
+<tr><td> Actually Holds attention<td class="c brand"><span class="ic yes">✓</span></td><td class="c"><span class="ic no">✕</span></td></tr>
+<tr><td>Packs into a travel bag</td><td class="c brand"><span class="ic yes">✓</span></td><td class="c"><span class="ic no">✕</span></td></tr>
+<tr><td>No batteries, no screen, just hands busy.</td><td class="c brand"><span class="ic yes">✓</span></td><td class="c"><span class="ic no">✕</span></td></tr>
+<tr><td>Takes the car, the restaurant and the stroller in stride.</td><td class="c brand"><span class="ic yes">✓</span></td><td class="c"><span class="ic no">✕</span></td></tr>
+</tbody>
+</table>
+<div class="nyc-note">🛡️ <b>Small-parts note included.</b> Clear supervision guidance so you know what to watch for during play.</div>
+<p class="nyc-proof">20,000+ Amazon reviews</p>
+</section>
+<script>
+(function(){
+  function init(){
+    if(document.getElementById('nyc-help-btn')) return true;
+    var labels = [...document.querySelectorAll('*')].filter(function(el){
+      return el.children.length === 0 && el.textContent.trim() === 'Color' && el.getBoundingClientRect().height > 0;
+    });
+    if(!labels.length) return false;
+    var lab = labels[0];
+    var wrap = document.createElement('div');
+    wrap.className = 'nyc-help-wrap';
+    wrap.innerHTML = '<button type="button" id="nyc-help-btn" class="nyc-help-btn" aria-expanded="false">Need Help Choosing?</button>' +
+      '<div id="nyc-help-pop" class="nyc-help-pop" hidden>' +
+      '<button type="button" class="nyc-help-x" aria-label="Close">&times;</button>' +
+      '<div class="nyc-help-title">Which one is right for your child?</div>' +
+      '<dl>' +
+      '<dt>Age</dt><dd>Basic is for children up to 4 years old. Premium is for children up to 6. Both are designed to start as early as possible.</dd>' +
+      '<dt>Content</dt><dd>Premium includes 2 extra pages of activities.</dd>' +
+      '<dt>Materials</dt><dd>Premium uses better-quality materials.</dd>' +
+      '<dt>Value</dt><dd>Premium gives your child more learning and more fun, and gives you more peace of mind. Basic is a great starting point.</dd>' +
+      '</dl></div>';
+    lab.insertAdjacentElement('afterend', wrap);
+    var btn = wrap.querySelector('#nyc-help-btn');
+    var pop = wrap.querySelector('#nyc-help-pop');
+    var x = wrap.querySelector('.nyc-help-x');
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      var open = pop.hasAttribute('hidden');
+      if(open){ pop.removeAttribute('hidden'); } else { pop.setAttribute('hidden',''); }
+      btn.setAttribute('aria-expanded', String(open));
+    });
+    x.addEventListener('click', function(){
+      pop.setAttribute('hidden','');
+      btn.setAttribute('aria-expanded','false');
+    });
+    return true;
+  }
+  if(!init()){
+    var tries = 0;
+    var t = setInterval(function(){ tries++; if(init() || tries > 40) clearInterval(t); }, 250);
+  }
+})();
+</script>
