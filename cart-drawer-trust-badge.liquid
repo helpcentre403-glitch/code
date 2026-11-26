@@ -4,11 +4,11 @@
 {%- if tp_img != blank -%}
 <style>
 .nyr-tp{display:block;margin:0 0 10px;text-align:center}
-.nyr-tp img{display:inline-block;width:auto;max-width:300px;height:58px;border-radius:10px}
+.nyr-tp img{display:block;width:100%;max-width:380px;height:auto;aspect-ratio:3.4/1;object-fit:cover;object-position:center;margin:0 auto;border-radius:10px}
 </style>
 <div class="nyr-tp">
   {%- if tp_url != blank -%}<a href="{{ tp_url }}" target="_blank" rel="noopener">{%- endif -%}
-  <img src="{{ tp_img }}" alt="Trustpilot rating 4.8 out of 5, based on over 190 reviews" width="300" height="130" loading="lazy">
+  <img src="{{ tp_img }}" alt="Trustpilot rating 4.8 out of 5, based on over 190 reviews" width="380" height="112" loading="lazy">
   {%- if tp_url != blank -%}</a>{%- endif -%}
 </div>
 {%- endif -%}
