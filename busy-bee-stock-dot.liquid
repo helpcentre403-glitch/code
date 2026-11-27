@@ -1,0 +1,23 @@
+{%- comment -%} Stock line with a slowly pulsing red dot. Shows the REAL inventory: "Low stock: X left" when the selected colour has 20 or fewer, otherwise "In stock, ready to ship". {%- endcomment -%}
+{%- assign nyr_low_at = 20 -%}
+<style>
+.nyr-sd{display:flex;align-items:center;gap:8px;margin:6px 0 10px;font-size:14px;color:#333}
+.nyr-sd-dot{position:relative;flex:0 0 10px;width:10px;height:10px;border-radius:50%;background:#e02424}
+.nyr-sd-dot:after{content:"";position:absolute;inset:0;border-radius:50%;background:#e02424;animation:nyrPulse 2.4s ease-out infinite}
+@keyframes nyrPulse{0%{transform:scale(1);opacity:.6}70%{transform:scale(2.6);opacity:0}100%{transform:scale(2.6);opacity:0}}
+@media(prefers-reduced-motion:reduce){.nyr-sd-dot:after{animation:none}}
+</style>
+<div class="nyr-sd" id="nyrSd" data-low="{{ nyr_low_at }}">
+  <span class="nyr-sd-dot" aria-hidden="true"></span>
+  <span class="nyr-sd-t">In stock, ready to ship</span>
+</div>
+<script>
+(function(){
+  var el=document.getElementById('nyrSd');if(!el||el.__ok)return;el.__ok=1;
+  var stock={ {%- for v in product.variants -%}"{{ v.id }}":{%- if v.inventory_management == 'shopify' -%}{{ v.inventory_quantity }}{%- else -%}null{%- endif -%}{%- unless forloop.last -%},{%- endunless -%}{%- endfor -%} };
+  var low=+el.getAttribute('data-low'),t=el.querySelector('.nyr-sd-t');
+  function current(){var i=document.querySelector('form[action*="/cart/add"] input[name="id"]');return i?i.value:'{{ product.selected_or_first_available_variant.id }}'}
+  function update(){var q=stock[current()];t.textContent=(typeof q==='number'&&q>0&&q<=low)?'Low stock: '+q+' left':'In stock, ready to ship'}
+  update();document.addEventListener('change',function(){setTimeout(update,50)});setInterval(update,1000);
+})();
+</script>
